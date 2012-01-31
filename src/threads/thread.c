@@ -147,16 +147,6 @@ thread_tick (void)
   else
     kernel_ticks++;
 
-  /* TODO - explain waking up or things */
-
- /* 
-  enum intr_level old_level;
-  old_level = intr_enable ();
-  printf ("LIST %s\n", list_empty (&sleeping_list) ? "empty" : "not empty");
-  intr_set_level (old_level);
-  */
-
-
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
     intr_yield_on_return ();
@@ -330,7 +320,8 @@ thread_wake_up (int64_t timer_ticks)
   }
 }
 
-//TODO - comment on is_less
+/* Returns true if the thread in elem_1 should wake up earlier than
+   the thread in elem_2. */
 bool
 wakes_up_earlier (const struct list_elem *elem_1, const struct list_elem *elem_2,
     void *aux UNUSED)
@@ -683,7 +674,7 @@ sleeplist_sema (void)
 {
   return &sleepsema;
 }
-
+
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
