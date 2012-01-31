@@ -220,7 +220,7 @@ thread_create (const char *name, int priority,
 
   intr_set_level (old_level);
 
-  /*TODO - comment about this */
+  /*TODO - comment about this sema_init */
   sema_init (&t->sleepsema, 0);
 
   /* Add to run queue. */
