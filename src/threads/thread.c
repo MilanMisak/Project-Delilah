@@ -11,6 +11,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "devices/timer.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -275,11 +276,7 @@ thread_sleep (int64_t ticks_when_awake)
 
     ASSERT (cur->status == THREAD_RUNNING);
 
-    /*printf ("SLEEP \n");
-    old_level = intr_disable (); */
-    
     sema_down (sleeplist_sema());
-    //list_push_front (&sleeping_list, &cur->sleepelem);
     // we want to insert ordered
     list_insert_ordered (&sleeping_list, &cur->sleepelem, &wakes_up_earlier, NULL);
     sema_up (sleeplist_sema());
@@ -288,14 +285,6 @@ thread_sleep (int64_t ticks_when_awake)
     
     /*Put the thread to sleep */
     sema_down (&cur->sleepsema);
-
-
-    /*thread_block ();
-
-    intr_set_level (old_level);
-
-    printf ("SLEEP \n");
-    thread_yield (); */
 }
 
 //TODO - comment wake up
@@ -315,7 +304,6 @@ thread_wake_up (int64_t timer_ticks)
       sema_up (sleeplist_sema());
 
       sema_up (&t->sleepsema);
-      /*thread_unblock (t); */
     }
   }
 }
@@ -648,6 +636,9 @@ schedule (void)
   ASSERT (intr_get_level () == INTR_OFF);
   ASSERT (cur->status != THREAD_RUNNING);
   ASSERT (is_thread (next));
+
+  /* Wake up any threads that can be woken */
+  thread_wake_up (timer_ticks());
 
   if (cur != next)
     prev = switch_threads (cur, next);
