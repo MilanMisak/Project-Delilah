@@ -28,6 +28,13 @@ static struct list ready_list;
    when they are first scheduled and removed when they exit. */
 static struct list all_list;
 
+/* List of processes which are sleeping after the call to
+   timer_sleep in timer. */
+static struct list sleeping_list;
+
+/* Semaphore for accessing the sleeping_list */
+static struct semaphore sleepsema;
+
 /* Idle thread. */
 static struct thread *idle_thread;
 
@@ -92,6 +99,9 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
+  list_init (&sleeping_list);
+
+  sema_init (&sleepsema, 1);
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
@@ -133,6 +143,16 @@ thread_tick (void)
 #endif
   else
     kernel_ticks++;
+
+  /* TODO - explain waking up or things */
+
+ /* 
+  enum intr_level old_level;
+  old_level = intr_enable ();
+  printf ("LIST %s\n", list_empty (&sleeping_list) ? "empty" : "not empty");
+  intr_set_level (old_level);
+  */
+
 
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
@@ -206,6 +226,9 @@ thread_create (const char *name, int priority,
 
   intr_set_level (old_level);
 
+  /*TODO - comment about this */
+  sema_init (&t->sleepsema, 0);
+
   /* Add to run queue. */
   thread_unblock (t);
 
@@ -248,6 +271,58 @@ thread_unblock (struct thread *t)
   list_push_back (&ready_list, &t->elem);
   t->status = THREAD_READY;
   intr_set_level (old_level);
+}
+
+//TODO - comment
+void
+thread_sleep (int64_t ticks_when_awake)
+{
+    struct thread *cur = thread_current ();
+    enum intr_level old_level;
+
+    ASSERT (cur->status == THREAD_RUNNING);
+
+    /*printf ("SLEEP \n");
+    old_level = intr_disable (); */
+    
+    sema_down(sleeplist_sema());
+    list_push_front (&sleeping_list, &cur->sleepelem);
+    sema_up(sleeplist_sema());
+
+    cur->ticks_when_awake = ticks_when_awake;
+    
+    /*Put the thread to sleep */
+    sema_down (&cur->sleepsema);
+
+
+    /*thread_block ();
+
+    intr_set_level (old_level);
+
+    printf ("SLEEP \n");
+    thread_yield (); */
+}
+
+//TODO - comment wake up
+void
+thread_wake_up (int64_t timer_ticks)
+{
+  struct list_elem *e;
+  for (e = list_begin (&sleeping_list); e != list_end (&sleeping_list);
+      e = list_next (e))
+  {
+    struct thread *t = list_entry (e, struct thread, sleepelem);
+
+    if (t->ticks_when_awake <= timer_ticks)
+    {
+      sema_down(sleeplist_sema());
+      list_remove (&t->sleepelem);
+      sema_up(sleeplist_sema());
+
+      sema_up(&t->sleepsema);
+      /*thread_unblock (t); */
+    }
+  }
 }
 
 /* Returns the name of the running thread. */
@@ -585,6 +660,13 @@ allocate_tid (void)
   lock_release (&tid_lock);
 
   return tid;
+}
+
+/* Returns semaphore for accessing the sleeping list. */
+struct semaphore *
+sleeplist_sema (void)
+{
+  return &sleepsema;
 }
 
 /* Offset of `stack' member within `struct thread'.
