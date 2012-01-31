@@ -278,7 +278,8 @@ thread_sleep (int64_t ticks_when_awake)
 
     sema_down (&sleepsema);
     // we want to insert ordered
-    list_insert_ordered (&sleeping_list, &cur->sleepelem, &wakes_up_earlier, NULL);
+    list_insert_ordered (&sleeping_list, &cur->sleepelem, &wakes_up_earlier,
+        NULL);
     sema_up (&sleepsema);
 
     cur->ticks_when_awake = ticks_when_awake;
@@ -311,8 +312,8 @@ thread_wake_up (int64_t timer_ticks)
 /* Returns true if the thread in elem_1 should wake up earlier than
    the thread in elem_2. */
 bool
-wakes_up_earlier (const struct list_elem *elem_1, const struct list_elem *elem_2,
-    void *aux UNUSED)
+wakes_up_earlier (const struct list_elem *elem_1,
+    const struct list_elem *elem_2, void *aux UNUSED)
 {
   struct thread *thread_1 = list_entry (elem_1, struct thread, sleepelem);
   struct thread *thread_2 = list_entry (elem_2, struct thread, sleepelem);
