@@ -78,6 +78,9 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
+static bool wakes_up_earlier (const struct list_elem *elem_1,
+    const struct list_elem *elem_2, void *aux);
+
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
    general and it is possible in this case only because loader.S
@@ -285,9 +288,11 @@ thread_sleep (int64_t ticks_when_awake)
     /*printf ("SLEEP \n");
     old_level = intr_disable (); */
     
-    sema_down(sleeplist_sema());
-    list_push_front (&sleeping_list, &cur->sleepelem);
-    sema_up(sleeplist_sema());
+    sema_down (sleeplist_sema());
+    //list_push_front (&sleeping_list, &cur->sleepelem);
+    // we want to insert ordered
+    list_insert_ordered (&sleeping_list, &cur->sleepelem, &wakes_up_earlier, NULL);
+    sema_up (sleeplist_sema());
 
     cur->ticks_when_awake = ticks_when_awake;
     
@@ -315,14 +320,24 @@ thread_wake_up (int64_t timer_ticks)
 
     if (t->ticks_when_awake <= timer_ticks)
     {
-      sema_down(sleeplist_sema());
+      sema_down (sleeplist_sema());
       list_remove (&t->sleepelem);
-      sema_up(sleeplist_sema());
+      sema_up (sleeplist_sema());
 
-      sema_up(&t->sleepsema);
+      sema_up (&t->sleepsema);
       /*thread_unblock (t); */
     }
   }
+}
+
+//TODO - comment on is_less
+bool
+wakes_up_earlier (const struct list_elem *elem_1, const struct list_elem *elem_2,
+    void *aux UNUSED)
+{
+  struct thread *thread_1 = list_entry (elem_1, struct thread, sleepelem);
+  struct thread *thread_2 = list_entry (elem_2, struct thread, sleepelem);
+  return thread_1->ticks_when_awake < thread_2->ticks_when_awake;
 }
 
 /* Returns the name of the running thread. */
