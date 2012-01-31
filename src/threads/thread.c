@@ -278,8 +278,12 @@ thread_sleep (int64_t ticks_when_awake)
 
     sema_down (&sleepsema);
     // we want to insert ordered
+<<<<<<< HEAD
     list_insert_ordered (&sleeping_list, &cur->sleepelem, &wakes_up_earlier,
         NULL);
+=======
+    list_insert_ordered (&sleeping_list, &cur->sleepelem, &wakes_up_earlier, NULL);
+>>>>>>> Removed sleepsema getter
     sema_up (&sleepsema);
 
     cur->ticks_when_awake = ticks_when_awake;
