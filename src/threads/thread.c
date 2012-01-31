@@ -276,10 +276,10 @@ thread_sleep (int64_t ticks_when_awake)
 
     ASSERT (cur->status == THREAD_RUNNING);
 
-    sema_down (sleeplist_sema());
+    sema_down (&sleepsema);
     // we want to insert ordered
     list_insert_ordered (&sleeping_list, &cur->sleepelem, &wakes_up_earlier, NULL);
-    sema_up (sleeplist_sema());
+    sema_up (&sleepsema);
 
     cur->ticks_when_awake = ticks_when_awake;
     
@@ -299,9 +299,9 @@ thread_wake_up (int64_t timer_ticks)
 
     if (t->ticks_when_awake <= timer_ticks)
     {
-      sema_down (sleeplist_sema());
+      sema_down (&sleepsema);
       list_remove (&t->sleepelem);
-      sema_up (sleeplist_sema());
+      sema_up (&sleepsema);
 
       sema_up (&t->sleepsema);
     }
@@ -659,12 +659,6 @@ allocate_tid (void)
   return tid;
 }
 
-/* Returns semaphore for accessing the sleeping list. */
-struct semaphore *
-sleeplist_sema (void)
-{
-  return &sleepsema;
-}
 
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
