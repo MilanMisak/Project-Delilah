@@ -40,6 +40,10 @@ def check_file(file_name)
       end
     end
 
+#if line =~ /^\s*[\w_]+\(/
+#     puts "#{file_name}:#{line_no} bad method call"
+#   end
+
     line_no += 1
   end
 end
