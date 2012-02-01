@@ -220,9 +220,6 @@ thread_create (const char *name, int priority,
 
   intr_set_level (old_level);
 
-  /*TODO - comment about this sema_init */
-  sema_init (&t->sleepsema, 0);
-
   /* Add to run queue. */
   thread_unblock (t);
 
@@ -276,13 +273,13 @@ thread_sleep (int64_t ticks_when_awake)
 
     ASSERT (cur->status == THREAD_RUNNING);
 
+    cur->ticks_when_awake = ticks_when_awake;
+    
     sema_down (&sleepsema);
-    // we want to insert ordered
+    // We want to insert threads into sleeping_list ordered.
     list_insert_ordered (&sleeping_list, &cur->sleepelem, &wakes_up_earlier,
         NULL);
     sema_up (&sleepsema);
-
-    cur->ticks_when_awake = ticks_when_awake;
     
     /*Put the thread to sleep */
     sema_down (&cur->sleepsema);
@@ -292,21 +289,25 @@ thread_sleep (int64_t ticks_when_awake)
 void
 thread_wake_up (int64_t timer_ticks)
 {
+  sema_down (&sleepsema);
+  
   struct list_elem *e;
   for (e = list_begin (&sleeping_list); e != list_end (&sleeping_list);
       e = list_next (e))
   {
     struct thread *t = list_entry (e, struct thread, sleepelem);
 
-    if (t->ticks_when_awake <= timer_ticks)
+    /* If the first thread can't wake up now neither can any other. */
+    if (t->ticks_when_awake > timer_ticks)
     {
-      sema_down (&sleepsema);
-      list_remove (&t->sleepelem);
-      sema_up (&sleepsema);
-
-      sema_up (&t->sleepsema);
+      break;
     }
+
+    list_remove (&t->sleepelem);
+    sema_up (&t->sleepsema);
   }
+  
+  sema_up (&sleepsema);
 }
 
 /* Returns true if the thread in elem_1 should wake up earlier than
@@ -541,6 +542,9 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+ 
+  /*TODO - comment about this sema_init */
+  sema_init (&t->sleepsema, 0);
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
@@ -638,12 +642,12 @@ schedule (void)
   ASSERT (cur->status != THREAD_RUNNING);
   ASSERT (is_thread (next));
 
-  /* Wake up any threads that can be woken */
-  thread_wake_up (timer_ticks());
-
   if (cur != next)
     prev = switch_threads (cur, next);
   thread_schedule_tail (prev);
+  
+  /* Wake up any threads that can be woken up. */
+  thread_wake_up (timer_ticks());
 }
 
 /* Returns a tid to use for a new thread. */
