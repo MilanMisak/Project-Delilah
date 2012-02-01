@@ -23,6 +23,7 @@
 
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
+/* This list is ordered by priority */
 static struct list ready_list;
 
 /* List of all processes.  Processes are added to this list
@@ -259,7 +260,7 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  list_insert_ordered (&ready_list, &t->elem, &has_higher_priority, NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
@@ -387,7 +388,7 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread) 
-    list_push_back (&ready_list, &cur->elem);
+    list_insert_ordered (&ready_list, &cur->elem, &has_higher_priority, NULL);
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -414,7 +415,12 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
+  struct thread *cur = thread_current ();
+  cur->priority = new_priority;
+  list_remove (&cur->elem);
+  list_insert_ordered (&ready_list, &cur->elem, &has_higher_priority, NULL);
+  if (!is_highest_priority ())
+    thread_yield ();
 }
 
 /* Returns the current thread's priority. */
@@ -669,3 +675,23 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+
+/* Determines whether or not the running thread has the highest priority. */
+bool
+is_highest_priority (void)
+{
+  struct thread *first =
+    list_entry(list_front(&ready_list), struct thread, elem);
+  return (thread_current ()->priority == first->priority);
+}
+
+/* TODO: Write annoying comments for that blaming system Milan has... Oh, wait, I guess this covers it... */
+/* Used to order lists in descending order of priority. */
+bool
+has_higher_priority (const struct list_elem *elem_1, const struct list_elem *elem_2, void *aux)
+{
+  struct thread *thread_1 = list_entry (elem_1, struct thread, elem);
+  struct thread *thread_2 = list_entry (elem_2, struct thread, elem);
+  return (thread_1->priority > thread_2->priority);
+}
+
