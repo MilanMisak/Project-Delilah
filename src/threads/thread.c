@@ -696,7 +696,7 @@ bool
 is_highest_priority (void)
 {
   struct thread *first =
-    list_entry(list_front(&ready_list), struct thread, elem);
+    list_entry (list_front (&ready_list), struct thread, elem);
   return (thread_current ()->priority == first->priority);
 }
 
