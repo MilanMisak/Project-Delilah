@@ -94,6 +94,8 @@ struct thread
     struct list_elem sleepelem;         /* List element for sleeping list. */
     struct semaphore sleepsema;         /* Semaphore to make a thread sleep
                                            and wake it up. */
+    struct lock *blockinglock;          /* Lock that is causing the thread to
+                                           block. */
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
