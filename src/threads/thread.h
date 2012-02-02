@@ -148,6 +148,8 @@ int thread_get_load_avg (void);
 
 void yield_if_necessary (void);
 bool is_highest_priority (void);
+bool has_lower_priority (const struct list_elem *elem_1,
+                         const struct list_elem *elem_2, void *aux);
 bool has_higher_priority (const struct list_elem *elem_1,
                           const struct list_elem *elem_2, void *aux);
 

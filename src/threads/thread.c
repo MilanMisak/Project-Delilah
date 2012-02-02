@@ -700,6 +700,15 @@ is_highest_priority (void)
   return (thread_current ()->priority == first->priority);
 }
 
+/* Used to find the maximum of a list, by priority. */
+bool
+has_lower_priority (const struct list_elem *elem_1, const struct list_elem *elem_2, void *aux)
+{
+  struct thread *thread_1 = list_entry (elem_1, struct thread, elem);
+  struct thread *thread_2 = list_entry (elem_2, struct thread, elem);
+  return (thread_1->priority < thread_2->priority);
+}
+
 /* Used to order lists in descending order of priority. */
 bool
 has_higher_priority (const struct list_elem *elem_1, const struct list_elem *elem_2, void *aux)
