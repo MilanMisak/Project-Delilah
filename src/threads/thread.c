@@ -63,6 +63,9 @@ static long long user_ticks;    /* # of timer ticks in user programs. */
 #define TIME_SLICE 4            /* # of timer ticks to give each thread. */
 static unsigned thread_ticks;   /* # of timer ticks since last yield. */
 
+/* True only when thread_wake_up is running. */
+static bool wake_up_running;
+
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
@@ -107,6 +110,7 @@ thread_init (void)
   list_init (&sleeping_list);
 
   sema_init (&sleepsema, 1);
+  wake_up_running = false;
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
@@ -224,6 +228,8 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
 
+  yield_if_necessary ();
+
   return tid;
 }
 
@@ -270,7 +276,6 @@ void
 thread_sleep (int64_t ticks_when_awake)
 {
     struct thread *cur = thread_current ();
-    enum intr_level old_level;
 
     ASSERT (cur->status == THREAD_RUNNING);
 
@@ -278,8 +283,8 @@ thread_sleep (int64_t ticks_when_awake)
     
     sema_down (&sleepsema);
     // We want to insert threads into sleeping_list ordered.
-    list_insert_ordered (&sleeping_list, &cur->sleepelem, &wakes_up_earlier,
-        NULL);
+    list_insert_ordered (&sleeping_list, &cur->sleepelem,
+                         &wakes_up_earlier, NULL);
     sema_up (&sleepsema);
     
     /*Put the thread to sleep */
@@ -294,21 +299,22 @@ thread_wake_up (int64_t timer_ticks)
   
   struct list_elem *e;
   for (e = list_begin (&sleeping_list); e != list_end (&sleeping_list);
-      e = list_next (e))
-  {
-    struct thread *t = list_entry (e, struct thread, sleepelem);
-
-    /* If the first thread can't wake up now neither can any other. */
-    if (t->ticks_when_awake > timer_ticks)
+       e = list_next (e))
     {
-      break;
-    }
+      struct thread *t = list_entry (e, struct thread, sleepelem);
 
-    list_remove (&t->sleepelem);
-    sema_up (&t->sleepsema);
-  }
+      /* If the first thread can't wake up now neither can any other. */
+      if (t->ticks_when_awake > timer_ticks)
+        {
+          break;
+        }
+
+      list_remove (&t->sleepelem);
+      sema_up (&t->sleepsema);
+    }
   
   sema_up (&sleepsema);
+
 }
 
 /* Returns true if the thread in elem_1 should wake up earlier than
@@ -419,8 +425,7 @@ thread_set_priority (int new_priority)
 
   struct thread *cur = thread_current ();
   cur->priority = new_priority;
-  if (!is_highest_priority ())
-    thread_yield ();
+  yield_if_necessary ();
 }
 
 /* Returns the current thread's priority. */
@@ -641,7 +646,9 @@ static void
 schedule (void) 
 {
   /* Wake up any threads that can be woken up. */
+  wake_up_running = true;
   thread_wake_up (timer_ticks());
+  wake_up_running = false;
 
   struct thread *cur = running_thread ();
   struct thread *next = next_thread_to_run ();
@@ -676,16 +683,32 @@ allocate_tid (void)
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
+/* Forces the current thrad to yield if it no longer has highest priority */
+void
+yield_if_necessary (void)
+{
+  if (!wake_up_running && !is_highest_priority ())
+    thread_yield ();
+}
+
 /* Determines whether or not the running thread has the highest priority. */
 bool
 is_highest_priority (void)
 {
   struct thread *first =
-    list_entry(list_front(&ready_list), struct thread, elem);
+    list_entry (list_front (&ready_list), struct thread, elem);
   return (thread_current ()->priority == first->priority);
 }
 
-/* TODO: Write annoying comments for that blaming system Milan has... Oh, wait, I guess this covers it... */
+/* Used to find the maximum of a list, by priority. */
+bool
+has_lower_priority (const struct list_elem *elem_1, const struct list_elem *elem_2, void *aux)
+{
+  struct thread *thread_1 = list_entry (elem_1, struct thread, elem);
+  struct thread *thread_2 = list_entry (elem_2, struct thread, elem);
+  return (thread_1->priority < thread_2->priority);
+}
+
 /* Used to order lists in descending order of priority. */
 bool
 has_higher_priority (const struct list_elem *elem_1, const struct list_elem *elem_2, void *aux)
