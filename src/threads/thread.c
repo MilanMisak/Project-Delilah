@@ -415,10 +415,10 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
+  ASSERT (PRI_MIN <= new_priority && new_priority <= PRI_MAX);
+
   struct thread *cur = thread_current ();
   cur->priority = new_priority;
-  list_remove (&cur->elem);
-  list_insert_ordered (&ready_list, &cur->elem, &has_higher_priority, NULL);
   if (!is_highest_priority ())
     thread_yield ();
 }
