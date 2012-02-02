@@ -634,6 +634,9 @@ thread_schedule_tail (struct thread *prev)
 static void
 schedule (void) 
 {
+  /* Wake up any threads that can be woken up. */
+  thread_wake_up (timer_ticks());
+
   struct thread *cur = running_thread ();
   struct thread *next = next_thread_to_run ();
   struct thread *prev = NULL;
@@ -646,8 +649,6 @@ schedule (void)
     prev = switch_threads (cur, next);
   thread_schedule_tail (prev);
   
-  /* Wake up any threads that can be woken up. */
-  thread_wake_up (timer_ticks());
 }
 
 /* Returns a tid to use for a new thread. */
