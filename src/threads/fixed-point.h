@@ -1,5 +1,5 @@
-#ifndef THREADS_FIXED-POINT_H
-#define THREADS_FIXED-POINT_H
+#ifndef THREADS_FIXED_POINT_H
+#define THREADS_FIXED_POINT_H
 
 /*
 Implementation for fixed-point real arithmetic.

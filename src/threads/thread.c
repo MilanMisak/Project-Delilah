@@ -4,6 +4,7 @@
 #include <random.h>
 #include <stdio.h>
 #include <string.h>
+#include "threads/fixed-point.h"
 #include "threads/flags.h"
 #include "threads/interrupt.h"
 #include "threads/intr-stubs.h"
@@ -78,6 +79,7 @@ static struct thread *running_thread (void);
 static struct thread *next_thread_to_run (void);
 static void init_thread (struct thread *, const char *name, int priority);
 static bool is_thread (struct thread *) UNUSED;
+static int thread_recalculate_priority (void);
 static void *alloc_frame (struct thread *, size_t size);
 static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
@@ -200,8 +202,8 @@ thread_create (const char *name, int priority,
     return TID_ERROR;
 
   /* Initialize thread. */
-  if (mlfqs)
-    priority = priority; //TODO - should be recalculate_priority () instead
+  if (thread_mlfqs)
+    priority = priority; //TODO - should be thread_recalculate_priority () instead
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
@@ -437,13 +439,28 @@ thread_get_priority (void)
   return thread_current ()->priority;
 }
 
+/* Recalculates (does NOT change) priority for the current thread.
+   Used by the BSD scheduler. */
+int
+thread_recalculate_priority (void)
+{
+//TODO - recalculate every 4th tick
+
+  int recent_cpu = thread_get_recent_cpu ();
+  int nice = thread_current ()->nice;
+
+  // TODO - use fixed point bollocks
+  int priority = PRI_MAX - (recent_cpu / 4) - (nice * 2);
+  return priority;
+}
+
 /* Sets the current thread's nice value to NICE. */
 void
 thread_set_nice (int new_nice) 
 {
   struct thread *cur = thread_current ();
   cur->nice = new_nice;
-  cur->priority = recalculate_priority ();
+  cur->priority = thread_recalculate_priority ();
   
   //TODO - yield if no longer highest priority thread - yield_if_necessary ()?
 }
@@ -468,6 +485,7 @@ int
 thread_get_recent_cpu (void) 
 {
   /* Not yet implemented. */
+  //recent_cpu = (2*load_avg)/(2*load_avg + 1) * recent_cpu + nice;
   return 0;
 }
 
