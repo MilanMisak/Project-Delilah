@@ -63,6 +63,7 @@ static long long user_ticks;    /* # of timer ticks in user programs. */
 /* Scheduling. */
 #define TIME_SLICE 4            /* # of timer ticks to give each thread. */
 static unsigned thread_ticks;   /* # of timer ticks since last yield. */
+static int load_avg;            /* System load average. In fixed-point arit. */
 
 /* True only when thread_wake_up is running. */
 static bool wake_up_running;
@@ -113,6 +114,9 @@ thread_init (void)
 
   sema_init (&sleepsema, 1);
   wake_up_running = false;
+
+  /* Initialised to 0, but needs to be converted to fixed-point arithmetic. */
+  load_avg = FP_TO_FIXED_POINT(0);
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
@@ -476,8 +480,7 @@ thread_get_nice (void)
 int
 thread_get_load_avg (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  return 100 * load_avg;
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
