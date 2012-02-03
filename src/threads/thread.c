@@ -200,6 +200,8 @@ thread_create (const char *name, int priority,
     return TID_ERROR;
 
   /* Initialize thread. */
+  if (mlfqs)
+    priority = priority; //TODO - should be recalculate_priority () instead
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
@@ -437,17 +439,20 @@ thread_get_priority (void)
 
 /* Sets the current thread's nice value to NICE. */
 void
-thread_set_nice (int nice UNUSED) 
+thread_set_nice (int new_nice) 
 {
-  /* Not yet implemented. */
+  struct thread *cur = thread_current ();
+  cur->nice = new_nice;
+  cur->priority = recalculate_priority ();
+  
+  //TODO - yield if no longer highest priority thread - yield_if_necessary ()?
 }
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  return thread_current ()->nice;
 }
 
 /* Returns 100 times the system load average. */
