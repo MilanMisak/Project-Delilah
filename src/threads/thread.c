@@ -81,7 +81,8 @@ static struct thread *next_thread_to_run (void);
 static void init_thread (struct thread *, const char *name, int priority,
     int recent_cpu);
 static bool is_thread (struct thread *) UNUSED;
-static int thread_recalculate_priority (struct thread *thr);
+static int thread_calculate_priority (struct thread *thr);
+static void thread_recalculate_priority (struct thread *thr, void *aux UNUSED);
 static void *alloc_frame (struct thread *, size_t size);
 static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
@@ -121,7 +122,8 @@ thread_init (void)
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
-  init_thread (initial_thread, "main", PRI_DEFAULT, 0);
+  int initial_recent_cpu = FP_TO_FIXED_POINT(0);
+  init_thread (initial_thread, "main", PRI_DEFAULT, initial_recent_cpu);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
 }
@@ -159,6 +161,14 @@ thread_tick (void)
 #endif
   else
     kernel_ticks++;
+
+  /* Recalculate priorities of all the threads every fourth clock tick
+     for use by BSD scheduler. */
+  if (thread_mlfqs && timer_ticks () % 4 == 0)
+  {
+    printf("FOREACH\n");
+    thread_foreach (&thread_recalculate_priority, NULL);
+  }
 
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
@@ -207,11 +217,9 @@ thread_create (const char *name, int priority,
     return TID_ERROR;
 
   /* Initialize thread. */
-  if (thread_mlfqs)
-  {
-    priority = priority; //TODO - should be thread_recalculate_priority () instead
-  }
   init_thread (t, name, priority, thread_get_recent_cpu ());
+  if (thread_mlfqs)
+    t->priority = thread_calculate_priority (t); 
   tid = t->tid = allocate_tid ();
 
   /* Prepare thread for first run by initializing its stack.
@@ -446,22 +454,30 @@ thread_get_priority (void)
   return thread_current ()->priority;
 }
 
-/* Recalculates (does NOT change) priority for the given thread.
+/* Calculates (does NOT change) a new priority for the given thread.
    Used by the BSD scheduler. */
 int
-thread_recalculate_priority (struct thread *thr)
+thread_calculate_priority (struct thread *thr)
 {
 //TODO - recalculate every 4th tick
-
-  int recent_cpu = thread_get_recent_cpu ();
-  int nice = thread_current ()->nice;
-  
-  /* Priority = PRI_MAX - (recent_cpu / 4) in fixed-point aritmetic. */
-  int priority = FP_SUBTRACT(FP_TO_FIXED_POINT(PRI_MAX), FP_DIVIDE_INT(recent_cpu, 4));
-  /* Priority -= nice * 2  */
-  priority = FP_SUBTRACT(priority, FP_MULTIPLY_INT(FP_TO_FIXED_POINT(nice), 2));
+ 
+  /* Priority = PRI_MAX in fixed-point aritmetic. */
+  int priority = FP_TO_FIXED_POINT(PRI_MAX);
+  /* Priority -= recent_cpu / 4 */
+  priority = FP_SUBTRACT(priority, FP_DIVIDE_INT(thr->recent_cpu, 4));
+  /* Priority -= nice * 2 */
+  priority = FP_SUBTRACT(priority, 
+      FP_MULTIPLY_INT(FP_TO_FIXED_POINT(thr->nice), 2));
   /* Return priority rounded down to the nearest integer. */
   return FP_TO_INT_TRUNCATE(priority);
+}
+
+/* Calculates and sets a new priority for the given thread.
+   Used by the BSD scheduler. */
+void
+thread_recalculate_priority (struct thread *thr, void *aux UNUSED)
+{
+  thr->priority = thread_calculate_priority (thr);
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -470,7 +486,7 @@ thread_set_nice (int new_nice)
 {
   struct thread *cur = thread_current ();
   cur->nice = new_nice;
-  cur->priority = thread_recalculate_priority (cur);
+  cur->priority = thread_calculate_priority (cur);
   
   /* Yield if the running thread no longer jas the highest priority. */
   yield_if_necessary ();
