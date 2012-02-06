@@ -27,6 +27,10 @@
 /* This list is ordered by priority */
 static struct list ready_list;
 
+/* Number of processes on the ready list. */
+/* In fixed-point arithmetic. */
+static int ready_count;
+
 /* List of all processes.  Processes are added to this list
    when they are first scheduled and removed when they exit. */
 static struct list all_list;
@@ -86,6 +90,7 @@ static void thread_recalculate_priority (struct thread *thr,
     void *aux UNUSED);
 static void thread_recalculate_recent_cpu (struct thread *thr,
     void *aux UNUSED);
+static void thread_recalculate_load_avg (void);
 static void *alloc_frame (struct thread *, size_t size);
 static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
@@ -116,6 +121,9 @@ thread_init (void)
   list_init (&ready_list);
   list_init (&all_list);
   list_init (&sleeping_list);
+
+  /* Initialised to 0, but needs to be converted to fixed-point arithmetic. */
+  ready_count = FP_TO_FIXED_POINT(0);
 
   sema_init (&sleepsema, 1);
   wake_up_running = false;
@@ -179,9 +187,14 @@ thread_tick (void)
     if (t != idle_thread)
       t->recent_cpu = FP_ADD_INT(t->recent_cpu, 1);
 
-    /* Recalculate recent_cpu for every thread once per second. */
+    /* Recalculate recent_cpu for every thread and system load average
+       once per second. */
     if (ticks % TIMER_FREQ == 0)
+    {
       thread_foreach (&thread_recalculate_recent_cpu, NULL);
+      //printf ("RECALC\n");
+      thread_recalculate_load_avg ();
+    }
   }
 
   /* Enforce preemption. */
@@ -300,6 +313,7 @@ thread_unblock (struct thread *t)
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
   list_insert_ordered (&ready_list, &t->elem, &has_higher_priority, NULL);
+  ready_count++;
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
@@ -427,7 +441,10 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread) 
+  {
     list_insert_ordered (&ready_list, &cur->elem, &has_higher_priority, NULL);
+    ready_count++;
+  }
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -515,7 +532,42 @@ thread_get_nice (void)
 int
 thread_get_load_avg (void) 
 {
-  return 100 * load_avg;
+  //printf ("GLA %i\n", FP_TO_INT_ROUND(FP_MULTIPLY_INT(load_avg, 100)));
+  //printf ("GLA %i\n",FP_MULTIPLY_INT(load_avg, 100));
+  return FP_TO_INT_ROUND(FP_MULTIPLY_INT(load_avg, 100));
+}
+
+/* Recalculates and changes the system load average. */
+void
+thread_recalculate_load_avg (void)
+{
+  /* Ready_threads = ready_count */
+  int ready_threads = ready_count;
+  /* Increment ready_threads by 1 to account for the current thread. */
+  if (thread_current () != idle_thread)
+  {
+    ready_threads++;
+  }
+  /* Convert ready_threads to fixed_point arithmetic. */
+  ready_threads = FP_TO_FIXED_POINT(ready_threads);
+  /* Ready_threads /= 60 */
+  ready_threads = FP_DIVIDE_INT(ready_threads, 60);
+  //printf ("LOADAVG: %i, %i\n", FP_TO_INT_ROUND(ready_threads), ready_threads);
+
+  /* New_load_avg = load_avg * 59 */
+  int new_load_avg = FP_MULTIPLY_INT(load_avg, 59);
+  /* New_load_avg /= 60 */
+  new_load_avg = FP_DIVIDE_INT(new_load_avg, 60);
+  /* New_load_avg += ready_threads */
+ //printf ("LOADAVG: %i, %i\n", FP_TO_INT_ROUND(ready_threads), ready_threads);
+  new_load_avg = FP_ADD(new_load_avg, ready_threads);
+
+
+  /*printf ("NEW LOAD AVG: %i, %i %i\n", FP_TO_INT_ROUND(new_load_avg), new_load_avg, thread_get_load_avg ());
+  printf("%i %i %i\n", new_load_avg, new_load_avg + FP_F / 2,( new_load_avg + FP_F / 2) / FP_F);
+  printf ("bla %lld\n", timer_ticks ());*/
+  
+  load_avg = new_load_avg;
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
@@ -667,7 +719,10 @@ next_thread_to_run (void)
   if (list_empty (&ready_list))
     return idle_thread;
   else
+  {
+    ready_count--;
     return list_entry (list_pop_front (&ready_list), struct thread, elem);
+  }
 }
 
 /* Completes a thread switch by activating the new thread's page
