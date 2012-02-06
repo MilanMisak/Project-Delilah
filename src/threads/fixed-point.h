@@ -42,6 +42,6 @@ The lowest 14 bits of a signed integer are fractional bits.
 #define FP_DIVIDE(X,Y)          (((int64_t) (X)) * FP_F / (Y))
 
 /* Divides x by y where n is an ordinary int, not a fixed-point number. */
-#define FP_DIVIDE_INT(X,N)    ((X) / (N))
+#define FP_DIVIDE_INT(X,N)      ((X) / (N))
 
 #endif /* threads/fixed-point.h */

@@ -452,10 +452,13 @@ thread_recalculate_priority (void)
 
   int recent_cpu = thread_get_recent_cpu ();
   int nice = thread_current ()->nice;
-
-  // TODO - use fixed point bollocks
-  int priority = PRI_MAX - (recent_cpu / 4) - (nice * 2);
-  return priority;
+  
+  /* Priority = PRI_MAX - (recent_cpu / 4) in fixed-point aritmetic. */
+  int priority = FP_SUBTRACT(FP_TO_FIXED_POINT(PRI_MAX), FP_DIVIDE_INT(recent_cpu, 4));
+  /* Priority -= nice * 2  */
+  priority = FP_SUBTRACT(priority, FP_MULTIPLY_INT(FP_TO_FIXED_POINT(nice), 2));
+  /* Return priority rounded down to the nearest integer. */
+  return FP_TO_INT_TRUNCATE(priority);
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -466,7 +469,8 @@ thread_set_nice (int new_nice)
   cur->nice = new_nice;
   cur->priority = thread_recalculate_priority ();
   
-  //TODO - yield if no longer highest priority thread - yield_if_necessary ()?
+  /* Yield if the running thread no longer jas the highest priority. */
+  yield_if_necessary ();
 }
 
 /* Returns the current thread's nice value. */
