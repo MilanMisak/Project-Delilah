@@ -82,7 +82,10 @@ static void init_thread (struct thread *, const char *name, int priority,
     int recent_cpu);
 static bool is_thread (struct thread *) UNUSED;
 static int thread_calculate_priority (struct thread *thr);
-static void thread_recalculate_priority (struct thread *thr, void *aux UNUSED);
+static void thread_recalculate_priority (struct thread *thr,
+    void *aux UNUSED);
+static void thread_recalculate_recent_cpu (struct thread *thr,
+    void *aux UNUSED);
 static void *alloc_frame (struct thread *, size_t size);
 static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
@@ -162,12 +165,23 @@ thread_tick (void)
   else
     kernel_ticks++;
 
-  /* Recalculate priorities of all the threads every fourth clock tick
-     for use by BSD scheduler. */
-  if (thread_mlfqs && timer_ticks () % 4 == 0)
+  /* Only when the BSD scheduler is running. */
+  if (thread_mlfqs)
   {
-    printf("FOREACH\n");
-    thread_foreach (&thread_recalculate_priority, NULL);
+    int ticks = timer_ticks ();
+
+    /* Recalculate priorities of all the threads every fourth clock tick
+       for use by BSD scheduler. */
+    if (ticks % 4 == 0)
+      thread_foreach (&thread_recalculate_priority, NULL);
+
+    /* Increment recent_cpu of the current thread unless it is idle. */
+    if (t != idle_thread)
+      t->recent_cpu = FP_ADD_INT(t->recent_cpu, 1);
+
+    /* Recalculate recent_cpu for every thread once per second. */
+    if (ticks % TIMER_FREQ == 0)
+      thread_foreach (&thread_recalculate_recent_cpu, NULL);
   }
 
   /* Enforce preemption. */
@@ -459,8 +473,6 @@ thread_get_priority (void)
 int
 thread_calculate_priority (struct thread *thr)
 {
-//TODO - recalculate every 4th tick
- 
   /* Priority = PRI_MAX in fixed-point aritmetic. */
   int priority = FP_TO_FIXED_POINT(PRI_MAX);
   /* Priority -= recent_cpu / 4 */
@@ -510,7 +522,27 @@ thread_get_load_avg (void)
 int
 thread_get_recent_cpu (void) 
 {
-  return thread_current ()->recent_cpu;
+  return 100 * thread_current ()->recent_cpu;
+}
+
+/* Recalculates and sets a new value for recent_cpu of the given thread. */
+void
+thread_recalculate_recent_cpu (struct thread *thr, void *aux UNUSED)
+{
+  //TODO - comments
+  int load_avg = thread_get_load_avg ();
+  /* Coefficient = load_avg * 2 */
+  int coefficient = FP_MULTIPLY_INT(load_avg, 2);
+  /* Coefficient = (load_avg * 2) / (load_avg * 2 + 1) */
+  coefficient = FP_DIVIDE(coefficient, FP_ADD_INT(coefficient, 1));
+
+  int recent_cpu = thr->recent_cpu;
+  /* Recent_cpu = recent_cpu * coefficient */
+  recent_cpu = FP_MULTIPLY(recent_cpu, coefficient);
+  /* Recent_cpu += nice */
+  recent_cpu = FP_ADD_INT(recent_cpu, thr->nice);
+
+  thr->recent_cpu = recent_cpu;
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
