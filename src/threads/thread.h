@@ -90,6 +90,8 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
     int nice;                           /* Niceness. */
+    int recent_cpu;                     /* Measure of how much CPU time
+                                           a thread received recently. */
     struct list_elem allelem;           /* List element for all threads list. */
     int64_t ticks_when_awake;           /* Timer ticks count when awakened. */
     struct list_elem sleepelem;         /* List element for sleeping list. */

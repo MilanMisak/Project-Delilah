@@ -78,9 +78,10 @@ static void kernel_thread (thread_func *, void *aux);
 static void idle (void *aux UNUSED);
 static struct thread *running_thread (void);
 static struct thread *next_thread_to_run (void);
-static void init_thread (struct thread *, const char *name, int priority);
+static void init_thread (struct thread *, const char *name, int priority,
+    int recent_cpu);
 static bool is_thread (struct thread *) UNUSED;
-static int thread_recalculate_priority (void);
+static int thread_recalculate_priority (struct thread *thr);
 static void *alloc_frame (struct thread *, size_t size);
 static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
@@ -120,7 +121,7 @@ thread_init (void)
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
-  init_thread (initial_thread, "main", PRI_DEFAULT);
+  init_thread (initial_thread, "main", PRI_DEFAULT, 0);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
 }
@@ -207,8 +208,10 @@ thread_create (const char *name, int priority,
 
   /* Initialize thread. */
   if (thread_mlfqs)
+  {
     priority = priority; //TODO - should be thread_recalculate_priority () instead
-  init_thread (t, name, priority);
+  }
+  init_thread (t, name, priority, thread_get_recent_cpu ());
   tid = t->tid = allocate_tid ();
 
   /* Prepare thread for first run by initializing its stack.
@@ -443,10 +446,10 @@ thread_get_priority (void)
   return thread_current ()->priority;
 }
 
-/* Recalculates (does NOT change) priority for the current thread.
+/* Recalculates (does NOT change) priority for the given thread.
    Used by the BSD scheduler. */
 int
-thread_recalculate_priority (void)
+thread_recalculate_priority (struct thread *thr)
 {
 //TODO - recalculate every 4th tick
 
@@ -467,7 +470,7 @@ thread_set_nice (int new_nice)
 {
   struct thread *cur = thread_current ();
   cur->nice = new_nice;
-  cur->priority = thread_recalculate_priority ();
+  cur->priority = thread_recalculate_priority (cur);
   
   /* Yield if the running thread no longer jas the highest priority. */
   yield_if_necessary ();
@@ -491,11 +494,9 @@ thread_get_load_avg (void)
 int
 thread_get_recent_cpu (void) 
 {
-  /* Not yet implemented. */
-  //recent_cpu = (2*load_avg)/(2*load_avg + 1) * recent_cpu + nice;
-  return 0;
+  return thread_current ()->recent_cpu;
 }
-
+
 /* Idle thread.  Executes when no other thread is ready to run.
 
    The idle thread is initially put on the ready list by
@@ -569,7 +570,7 @@ is_thread (struct thread *t)
 /* Does basic initialization of T as a blocked thread named
    NAME. */
 static void
-init_thread (struct thread *t, const char *name, int priority)
+init_thread (struct thread *t, const char *name, int priority, int recent_cpu)
 {
   enum intr_level old_level;
 
@@ -582,6 +583,8 @@ init_thread (struct thread *t, const char *name, int priority)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
+  /* Used only by BSD scheduler but it can be here. */
+  t->recent_cpu = recent_cpu;
   t->magic = THREAD_MAGIC;
  
   /*TODO - comment about this sema_init */
