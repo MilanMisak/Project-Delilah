@@ -244,7 +244,6 @@ lock_release (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
 
-  //lock->holder->blockinglock = NULL;
   lock->holder = NULL;
   thread_remove_priority (thread_current (), lock);
   thread_recalculate_priority (thread_current ());

@@ -434,6 +434,7 @@ thread_set_priority (int new_priority)
 void
 thread_recalculate_priority (struct thread *t)
 {
+    t->priority = t->self_set_priority;
     if (!list_empty (&t->donated_priorities))
       {    
         struct donated_priority *d =
@@ -443,18 +444,15 @@ thread_recalculate_priority (struct thread *t)
         if (d->priority > t->priority)
           {
               t->priority = d->priority;
-              return;
           }
       }
 
-    t->priority = t->self_set_priority;
 }
 
 /* TODO - I'm a pretty butterfly. */
 void       
 donate_priority (struct thread *donating_thread)
 {
-  //printf("S");
   if (donating_thread->blockinglock == NULL)
     { 
       return;
@@ -485,7 +483,6 @@ donate_priority (struct thread *donating_thread)
   
   if (!priority_in_list)
     {
-        
       struct donated_priority *donation = malloc (sizeof (struct donated_priority));
       donation->priority = donating_thread->priority;
       donation->blockinglock = donating_thread->blockinglock;
