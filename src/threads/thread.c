@@ -268,6 +268,7 @@ thread_unblock (struct thread *t)
   ASSERT (t->status == THREAD_BLOCKED);
   list_insert_ordered (&ready_list, &t->elem, &has_higher_priority, NULL);
   t->status = THREAD_READY;
+  t->blockinglock = NULL;
   intr_set_level (old_level);
 }
 
@@ -424,8 +425,97 @@ thread_set_priority (int new_priority)
   ASSERT (PRI_MIN <= new_priority && new_priority <= PRI_MAX);
 
   struct thread *cur = thread_current ();
-  cur->priority = new_priority;
+  cur->self_set_priority = new_priority;
+  thread_recalculate_priority (cur);
   yield_if_necessary ();
+}
+
+/* Recalculates the priority field for a specified thread */
+void
+thread_recalculate_priority (struct thread *t)
+{
+    if (!list_empty (&t->donated_priorities))
+      {    
+        struct donated_priority *d =
+            list_entry (list_front (&t->donated_priorities),
+                        struct donated_priority, priorityelem);
+
+        if (d->priority > t->priority)
+          {
+              t->priority = d->priority;
+              return;
+          }
+      }
+
+    t->priority = t->self_set_priority;
+}
+
+/* TODO - I'm a pretty butterfly. */
+void       
+donate_priority (struct thread *donating_thread)
+{
+  //printf("S");
+  if (donating_thread->blockinglock == NULL)
+    { 
+      return;
+    }
+
+  struct thread *recieving_thread = donating_thread->blockinglock->holder;
+  struct list_elem *e;
+  bool priority_in_list = false;
+
+  for (e = list_begin (&recieving_thread->donated_priorities);
+       e != list_end (&recieving_thread->donated_priorities);
+       e = list_next (e))
+    {
+      struct donated_priority *d =
+      list_entry (e, struct donated_priority, priorityelem);
+
+      if (d->blockinglock == donating_thread->blockinglock)
+        {
+          priority_in_list = true;
+          if (donating_thread->priority > d->priority)
+            {
+              d->priority = donating_thread->priority;
+              break; 
+            }
+          return;       
+        }             
+    }
+  
+  if (!priority_in_list)
+    {
+        
+      struct donated_priority *donation = malloc (sizeof (struct donated_priority));
+      donation->priority = donating_thread->priority;
+      donation->blockinglock = donating_thread->blockinglock;
+      list_insert_ordered (&recieving_thread->donated_priorities, &donation->priorityelem,
+                           &has_higher_priority_donation, NULL);                       
+    } 
+
+  thread_recalculate_priority(recieving_thread);
+  donate_priority(recieving_thread);
+}
+
+/* TODO - Jack is the wordwheel god */
+void
+thread_remove_priority (struct thread *t, struct lock *l)
+{  
+  struct list_elem *e;
+          
+  for (e = list_begin (&t->donated_priorities);
+       e != list_end (&t->donated_priorities);        
+       e = list_next (e))
+    {
+      struct donated_priority *d =
+      list_entry (e, struct donated_priority, priorityelem);
+      
+      if (d->blockinglock == l)
+        {
+          list_remove (e);
+          return;
+        }
+    }
 }
 
 /* Returns the current thread's priority. */
@@ -552,10 +642,11 @@ init_thread (struct thread *t, const char *name, int priority)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
+  t->self_set_priority = priority;
   t->magic = THREAD_MAGIC;
  
-  /*TODO - comment about this sema_init */
   sema_init (&t->sleepsema, 0);
+  list_init (&t->donated_priorities);
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
@@ -695,6 +786,9 @@ yield_if_necessary (void)
 bool
 is_highest_priority (void)
 {
+  if (list_empty (&ready_list))
+      return true;
+
   struct thread *first =
     list_entry (list_front (&ready_list), struct thread, elem);
   return (thread_current ()->priority == first->priority);

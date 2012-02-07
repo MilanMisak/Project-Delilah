@@ -24,6 +24,15 @@ struct lock
     struct semaphore semaphore; /* Binary semaphore controlling access. */
   };
 
+struct donated_priority
+  {
+   struct lock *blockinglock;     /* The lock causing priority to be 
+                                     donated. */
+   int priority;                  /* The priority donated. */
+   struct list_elem priorityelem; /* Element in a thread's donated priority 
+                                     list.*/
+  };
+
 void lock_init (struct lock *);
 void lock_acquire (struct lock *);
 bool lock_try_acquire (struct lock *);
@@ -40,6 +49,9 @@ void cond_init (struct condition *);
 void cond_wait (struct condition *, struct lock *);
 void cond_signal (struct condition *, struct lock *);
 void cond_broadcast (struct condition *, struct lock *);
+
+bool has_higher_priority_donation (const struct list_elem *elem_1,
+                                   const struct list_elem *elem_2, void *aux);
 
 /* Optimization barrier.
 

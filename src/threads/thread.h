@@ -89,13 +89,16 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
+    int self_set_priority;              /* Priority that has not been set
+                                           via donation */
     struct list_elem allelem;           /* List element for all threads list. */
     int64_t ticks_when_awake;           /* Timer ticks count when awakened. */
     struct list_elem sleepelem;         /* List element for sleeping list. */
     struct semaphore sleepsema;         /* Semaphore to make a thread sleep
                                            and wake it up. */
-    struct lock *blockinglock;          /* Lock that is causing the thread to
-                                           block. */
+    struct lock *blockinglock;          /* Lock causing the thread to block. */
+    struct list donated_priorities;     /* List of locks and donated priorities
+                                           for them. */
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -140,6 +143,9 @@ typedef void thread_action_func (struct thread *t, void *aux);
 void thread_foreach (thread_action_func *, void *);
 
 int thread_get_priority (void);
+void thread_recalculate_priority (struct thread *t);
+void thread_donate_priority (struct thread *t);
+void thread_remove_priority (struct thread *t, struct lock *l);
 void thread_set_priority (int);
 int thread_get_nice (void);
 void thread_set_nice (int);

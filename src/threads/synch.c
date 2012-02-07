@@ -122,6 +122,7 @@ sema_up (struct semaphore *sema)
       thread_unblock (list_entry (max, struct thread, elem));
       yield_if_necessary ();
     }
+ 
   intr_set_level (old_level);
 }
 
@@ -200,15 +201,15 @@ lock_acquire (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
-
-/*  if (lock->holder != NULL)
+  bool success = sema_try_down (&lock->semaphore);
+  
+  if (!success)
     {
       thread_current ()->blockinglock = lock;
-      list_push_back (&sema->waiters, &thread_current ()->elem);
-      thread_block ();
-    }*/
+      donate_priority (thread_current ());
+      sema_down (&lock->semaphore);
+    }
 
-  sema_down (&lock->semaphore);
   lock->holder = thread_current ();
 }
 
@@ -243,8 +244,11 @@ lock_release (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
 
-//  thread_current ()->blockinglock = NULL;
+  //lock->holder->blockinglock = NULL;
   lock->holder = NULL;
+  thread_remove_priority (thread_current (), lock);
+  thread_recalculate_priority (thread_current ());
+  
   sema_up (&lock->semaphore);
 }
 
@@ -352,4 +356,15 @@ cond_broadcast (struct condition *cond, struct lock *lock)
 
   while (!list_empty (&cond->waiters))
     cond_signal (cond, lock);
+}
+
+/* Used to order donated priorities in descending order */
+bool
+has_higher_priority_donation (const struct list_elem *elem_1, const struct list_elem *elem_2, void *aux)
+{
+  struct donated_priority *priority_1 = 
+      list_entry (elem_1, struct donated_priority, priorityelem);
+   struct donated_priority *priority_2 =
+             list_entry (elem_2, struct donated_priority, priorityelem);
+  return (priority_1->priority > priority_2->priority);
 }
