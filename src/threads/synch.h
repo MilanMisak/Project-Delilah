@@ -50,6 +50,8 @@ void cond_wait (struct condition *, struct lock *);
 void cond_signal (struct condition *, struct lock *);
 void cond_broadcast (struct condition *, struct lock *);
 
+bool sema_elem_has_lower_priority (const struct list_elem *elem_1,
+                                   const struct list_elem *elem_2, void *aux);
 bool has_higher_priority_donation (const struct list_elem *elem_1,
                                    const struct list_elem *elem_2, void *aux);
 

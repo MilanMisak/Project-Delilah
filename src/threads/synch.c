@@ -117,7 +117,7 @@ sema_up (struct semaphore *sema)
   if (!list_empty (&sema->waiters))
     {
       struct list_elem *max = list_max (&sema->waiters,
-                                       &has_lower_priority, NULL);
+                                        &has_lower_priority, NULL);
       list_remove (max);
       thread_unblock (list_entry (max, struct thread, elem));
       yield_if_necessary ();
@@ -266,6 +266,7 @@ lock_held_by_current_thread (const struct lock *lock)
 struct semaphore_elem 
   {
     struct list_elem elem;              /* List element. */
+    struct thread *thread;              /* The thread waiting on the condition. */
     struct semaphore semaphore;         /* This semaphore. */
   };
 
@@ -310,6 +311,7 @@ cond_wait (struct condition *cond, struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (lock_held_by_current_thread (lock));
   
+  waiter.thread = thread_current ();
   sema_init (&waiter.semaphore, 0);
   list_push_back (&cond->waiters, &waiter.elem);
   lock_release (lock);
@@ -335,7 +337,7 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED)
   if (!list_empty (&cond->waiters))
     {
       struct list_elem *max = list_max (&cond->waiters,
-                                       &has_lower_priority, NULL);
+                                        &sema_elem_has_lower_priority, NULL);
       list_remove (max);
       sema_up (&list_entry (max, struct semaphore_elem, elem)->semaphore);
     }
@@ -359,7 +361,8 @@ cond_broadcast (struct condition *cond, struct lock *lock)
 
 /* Used to order donated priorities in descending order */
 bool
-has_higher_priority_donation (const struct list_elem *elem_1, const struct list_elem *elem_2, void *aux)
+has_higher_priority_donation (const struct list_elem *elem_1,
+                              const struct list_elem *elem_2, void *aux)
 {
   struct donated_priority *priority_1 = 
       list_entry (elem_1, struct donated_priority, priorityelem);
@@ -367,3 +370,16 @@ has_higher_priority_donation (const struct list_elem *elem_1, const struct list_
              list_entry (elem_2, struct donated_priority, priorityelem);
   return (priority_1->priority > priority_2->priority);
 }
+
+/* Used to find the maximum in a list of semaphore_elems. */
+bool
+sema_elem_has_lower_priority (const struct list_elem *elem_1,
+                              const struct list_elem *elem_2, void *aux)
+{
+  struct thread *thread_1 = list_entry (elem_1, struct semaphore_elem,
+                                        elem)->thread;
+  struct thread *thread_2 = list_entry (elem_2, struct semaphore_elem,
+                                        elem)->thread;
+  return (thread_1->priority < thread_2->priority);
+}
+
