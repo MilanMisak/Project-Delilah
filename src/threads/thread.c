@@ -473,7 +473,8 @@ thread_set_priority (int new_priority)
 {
   ASSERT (PRI_MIN <= new_priority && new_priority <= PRI_MAX);
 
-  if (!mlfqs)
+  /* The call should be ignored with when BSD scheduler is running. */
+  if (mlfqs)
     return;
 
   struct thread *cur = thread_current ();
