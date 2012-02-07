@@ -191,8 +191,8 @@ thread_tick (void)
        once per second. */
     if (ticks % TIMER_FREQ == 0)
     {
-      thread_foreach (&thread_recalculate_recent_cpu, NULL);
       thread_recalculate_load_avg ();
+      thread_foreach (&thread_recalculate_recent_cpu, NULL);
     }
   }
 
