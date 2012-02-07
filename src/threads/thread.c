@@ -185,14 +185,15 @@ thread_tick (void)
 
     /* Increment recent_cpu of the current thread unless it is idle. */
     if (t != idle_thread)
+    {
       t->recent_cpu = FP_ADD_INT(t->recent_cpu, 1);
+    }
 
     /* Recalculate recent_cpu for every thread and system load average
        once per second. */
     if (ticks % TIMER_FREQ == 0)
     {
       thread_foreach (&thread_recalculate_recent_cpu, NULL);
-      //printf ("RECALC\n");
       thread_recalculate_load_avg ();
     }
   }
@@ -574,15 +575,13 @@ thread_recalculate_load_avg (void)
 int
 thread_get_recent_cpu (void) 
 {
-  return 100 * thread_current ()->recent_cpu;
+  return FP_TO_INT_ROUND(FP_MULTIPLY_INT(thread_current ()->recent_cpu, 100));
 }
 
 /* Recalculates and sets a new value for recent_cpu of the given thread. */
 void
 thread_recalculate_recent_cpu (struct thread *thr, void *aux UNUSED)
 {
-  //TODO - comments
-  int load_avg = thread_get_load_avg ();
   /* Coefficient = load_avg * 2 */
   int coefficient = FP_MULTIPLY_INT(load_avg, 2);
   /* Coefficient = (load_avg * 2) / (load_avg * 2 + 1) */
