@@ -82,7 +82,7 @@ static void idle (void *aux UNUSED);
 static struct thread *running_thread (void);
 static struct thread *next_thread_to_run (void);
 static void init_thread (struct thread *, const char *name, int priority,
-    int recent_cpu);
+    int recent_cpu, int nice);
 static bool is_thread (struct thread *) UNUSED;
 static int thread_calculate_priority (struct thread *);
 static void thread_recalculate_priority (struct thread *,
@@ -132,7 +132,7 @@ thread_init (void)
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
   int initial_recent_cpu = FP_TO_FIXED_POINT(0);
-  init_thread (initial_thread, "main", PRI_DEFAULT, initial_recent_cpu);
+  init_thread (initial_thread, "main", PRI_DEFAULT, initial_recent_cpu, 0);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
 }
@@ -242,7 +242,9 @@ thread_create (const char *name, int priority,
     return TID_ERROR;
 
   /* Initialize thread. */
-  init_thread (t, name, priority, thread_get_recent_cpu ());
+  init_thread (t, name, priority, thread_get_recent_cpu (),
+      thread_get_nice ());
+  /* Need to have a thread struct before calculating priority. */
   if (thread_mlfqs)
     t->priority = thread_calculate_priority (t); 
   tid = t->tid = allocate_tid ();
@@ -471,6 +473,9 @@ thread_set_priority (int new_priority)
 {
   ASSERT (PRI_MIN <= new_priority && new_priority <= PRI_MAX);
 
+  if (!mlfqs)
+    return;
+
   struct thread *cur = thread_current ();
   cur->priority = new_priority;
   yield_if_necessary ();
@@ -511,6 +516,8 @@ thread_recalculate_priority (struct thread *t, void *aux UNUSED)
 void
 thread_set_nice (int new_nice) 
 {
+  ASSERT (new_nice >= -20 && new_nice <= 20);
+
   struct thread *cur = thread_current ();
   cur->nice = new_nice;
   cur->priority = thread_calculate_priority (cur);
@@ -657,7 +664,8 @@ is_thread (struct thread *t)
 /* Does basic initialization of T as a blocked thread named
    NAME. */
 static void
-init_thread (struct thread *t, const char *name, int priority, int recent_cpu)
+init_thread (struct thread *t, const char *name, int priority,
+    int recent_cpu, int nice)
 {
   enum intr_level old_level;
 
@@ -670,8 +678,10 @@ init_thread (struct thread *t, const char *name, int priority, int recent_cpu)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
-  /* Used only by BSD scheduler but it can be here - it will be 0. */
+  /* Receny_cpu and nice used only by BSD scheduler but they can be here.
+     They will be initialised and kept at 0. */
   t->recent_cpu = recent_cpu;
+  t->nice = nice;
   t->magic = THREAD_MAGIC;
  
   /*TODO - comment about this sema_init */
