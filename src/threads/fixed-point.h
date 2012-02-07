@@ -1,5 +1,5 @@
-#ifndef THREADS_FIXED-POINT_H
-#define THREADS_FIXED-POINT_H
+#ifndef THREADS_FIXED_POINT_H
+#define THREADS_FIXED_POINT_H
 
 /*
 Implementation for fixed-point real arithmetic.
@@ -17,7 +17,8 @@ The lowest 14 bits of a signed integer are fractional bits.
 #define FP_TO_INT_TRUNCATE(X)   ((X) / FP_F)
 
 /* Converts x to integer (rounding to nearest). */
-#define FP_TO_INT_ROUND(X)  (((X) >= 0) ? ((X) + FP_F / 2) : ((X) - FP_F / 2))
+#define FP_TO_INT_ROUND(X) \
+    (((X) >= FP_F) ? ((X) + FP_F / 2) / FP_F : ((X) - FP_F / 2) / FP_F)
 
 
 /* Adds x and y. */
@@ -42,6 +43,6 @@ The lowest 14 bits of a signed integer are fractional bits.
 #define FP_DIVIDE(X,Y)          (((int64_t) (X)) * FP_F / (Y))
 
 /* Divides x by y where n is an ordinary int, not a fixed-point number. */
-#define FP_DIVIDE_INT(X,N)    ((X) / (N))
+#define FP_DIVIDE_INT(X,N)      ((X) / (N))
 
 #endif /* threads/fixed-point.h */

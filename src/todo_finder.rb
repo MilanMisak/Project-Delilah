@@ -35,7 +35,7 @@ class TodoFinder
   def check_file(file_name)
     line_no = 1
     File.foreach(file_name) do |line|
-      @strategy.check_line(file_name, line_no, line)
+      @strategy.check_line(file_name, line_no, line.chomp!)
 
       #if line =~ /[\w_]+\([^;)]*\)[;,]/
       #     puts "#{file_name}:#{line_no} bad method call"

@@ -91,6 +91,9 @@ struct thread
     int priority;                       /* Priority. */
     int self_set_priority;              /* Priority that has not been set
                                            via donation */
+    int nice;                           /* Niceness. */
+    int recent_cpu;                     /* Measure of how much CPU time
+                                           a thread received recently. */
     struct list_elem allelem;           /* List element for all threads list. */
     int64_t ticks_when_awake;           /* Timer ticks count when awakened. */
     struct list_elem sleepelem;         /* List element for sleeping list. */
@@ -143,7 +146,7 @@ typedef void thread_action_func (struct thread *t, void *aux);
 void thread_foreach (thread_action_func *, void *);
 
 int thread_get_priority (void);
-void thread_recalculate_priority (struct thread *t);
+void thread_choose_priority (struct thread *t);
 void thread_donate_priority (struct thread *t);
 void thread_remove_priority (struct thread *t, struct lock *l);
 void thread_set_priority (int);
