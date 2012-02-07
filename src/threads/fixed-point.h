@@ -17,7 +17,8 @@ The lowest 14 bits of a signed integer are fractional bits.
 #define FP_TO_INT_TRUNCATE(X)   ((X) / FP_F)
 
 /* Converts x to integer (rounding to nearest). */
-#define FP_TO_INT_ROUND(X)  (((X) >= FP_F) ? ((X) + FP_F / 2) / FP_F : ((X) - FP_F / 2) / FP_F)
+#define FP_TO_INT_ROUND(X) \
+    (((X) >= FP_F) ? ((X) + FP_F / 2) / FP_F : ((X) - FP_F / 2) / FP_F)
 
 
 /* Adds x and y. */

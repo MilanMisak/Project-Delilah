@@ -28,7 +28,6 @@
 static struct list ready_list;
 
 /* Number of processes on the ready list. */
-/* In fixed-point arithmetic. */
 static int ready_count;
 
 /* List of all processes.  Processes are added to this list
@@ -85,12 +84,12 @@ static struct thread *next_thread_to_run (void);
 static void init_thread (struct thread *, const char *name, int priority,
     int recent_cpu);
 static bool is_thread (struct thread *) UNUSED;
-static int thread_calculate_priority (struct thread *thr);
-static void thread_recalculate_priority (struct thread *thr,
-    void *aux UNUSED);
-static void thread_recalculate_recent_cpu (struct thread *thr,
+static int thread_calculate_priority (struct thread *);
+static void thread_recalculate_priority (struct thread *,
     void *aux UNUSED);
 static void thread_recalculate_load_avg (void);
+static void thread_recalculate_recent_cpu (struct thread *,
+    void *aux UNUSED);
 static void *alloc_frame (struct thread *, size_t size);
 static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
@@ -122,8 +121,7 @@ thread_init (void)
   list_init (&all_list);
   list_init (&sleeping_list);
 
-  /* Initialised to 0, but needs to be converted to fixed-point arithmetic. */
-  ready_count = FP_TO_FIXED_POINT(0);
+  ready_count = 0;
 
   sema_init (&sleepsema, 1);
   wake_up_running = false;
@@ -178,8 +176,7 @@ thread_tick (void)
   {
     int ticks = timer_ticks ();
 
-    /* Recalculate priorities of all the threads every fourth clock tick
-       for use by BSD scheduler. */
+    /* Recalculate priorities of all the threads every fourth clock tick. */
     if (ticks % 4 == 0)
       thread_foreach (&thread_recalculate_priority, NULL);
 
@@ -489,15 +486,15 @@ thread_get_priority (void)
 /* Calculates (does NOT change) a new priority for the given thread.
    Used by the BSD scheduler. */
 int
-thread_calculate_priority (struct thread *thr)
+thread_calculate_priority (struct thread *t)
 {
   /* Priority = PRI_MAX in fixed-point aritmetic. */
   int priority = FP_TO_FIXED_POINT(PRI_MAX);
   /* Priority -= recent_cpu / 4 */
-  priority = FP_SUBTRACT(priority, FP_DIVIDE_INT(thr->recent_cpu, 4));
+  priority = FP_SUBTRACT(priority, FP_DIVIDE_INT(t->recent_cpu, 4));
   /* Priority -= nice * 2 */
   priority = FP_SUBTRACT(priority, 
-      FP_MULTIPLY_INT(FP_TO_FIXED_POINT(thr->nice), 2));
+      FP_MULTIPLY_INT(FP_TO_FIXED_POINT(t->nice), 2));
   /* Return priority rounded down to the nearest integer. */
   return FP_TO_INT_TRUNCATE(priority);
 }
@@ -505,12 +502,12 @@ thread_calculate_priority (struct thread *thr)
 /* Calculates and sets a new priority for the given thread.
    Used by the BSD scheduler. */
 void
-thread_recalculate_priority (struct thread *thr, void *aux UNUSED)
+thread_recalculate_priority (struct thread *t, void *aux UNUSED)
 {
-  thr->priority = thread_calculate_priority (thr);
+  t->priority = thread_calculate_priority (t);
 }
 
-/* Sets the current thread's nice value to NICE. */
+/* Sets the current thread's nice value to new_nice. */
 void
 thread_set_nice (int new_nice) 
 {
@@ -518,7 +515,7 @@ thread_set_nice (int new_nice)
   cur->nice = new_nice;
   cur->priority = thread_calculate_priority (cur);
   
-  /* Yield if the running thread no longer jas the highest priority. */
+  /* Yield if the running thread no longer has the highest priority. */
   yield_if_necessary ();
 }
 
@@ -533,8 +530,6 @@ thread_get_nice (void)
 int
 thread_get_load_avg (void) 
 {
-  //printf ("GLA %i\n", FP_TO_INT_ROUND(FP_MULTIPLY_INT(load_avg, 100)));
-  //printf ("GLA %i\n",FP_MULTIPLY_INT(load_avg, 100));
   return FP_TO_INT_ROUND(FP_MULTIPLY_INT(load_avg, 100));
 }
 
@@ -553,21 +548,14 @@ thread_recalculate_load_avg (void)
   ready_threads = FP_TO_FIXED_POINT(ready_threads);
   /* Ready_threads /= 60 */
   ready_threads = FP_DIVIDE_INT(ready_threads, 60);
-  //printf ("LOADAVG: %i, %i\n", FP_TO_INT_ROUND(ready_threads), ready_threads);
 
   /* New_load_avg = load_avg * 59 */
   int new_load_avg = FP_MULTIPLY_INT(load_avg, 59);
   /* New_load_avg /= 60 */
   new_load_avg = FP_DIVIDE_INT(new_load_avg, 60);
   /* New_load_avg += ready_threads */
- //printf ("LOADAVG: %i, %i\n", FP_TO_INT_ROUND(ready_threads), ready_threads);
   new_load_avg = FP_ADD(new_load_avg, ready_threads);
 
-
-  /*printf ("NEW LOAD AVG: %i, %i %i\n", FP_TO_INT_ROUND(new_load_avg), new_load_avg, thread_get_load_avg ());
-  printf("%i %i %i\n", new_load_avg, new_load_avg + FP_F / 2,( new_load_avg + FP_F / 2) / FP_F);
-  printf ("bla %lld\n", timer_ticks ());*/
-  
   load_avg = new_load_avg;
 }
 
@@ -580,20 +568,20 @@ thread_get_recent_cpu (void)
 
 /* Recalculates and sets a new value for recent_cpu of the given thread. */
 void
-thread_recalculate_recent_cpu (struct thread *thr, void *aux UNUSED)
+thread_recalculate_recent_cpu (struct thread *t, void *aux UNUSED)
 {
   /* Coefficient = load_avg * 2 */
   int coefficient = FP_MULTIPLY_INT(load_avg, 2);
   /* Coefficient = (load_avg * 2) / (load_avg * 2 + 1) */
   coefficient = FP_DIVIDE(coefficient, FP_ADD_INT(coefficient, 1));
 
-  int recent_cpu = thr->recent_cpu;
+  int recent_cpu = t->recent_cpu;
   /* Recent_cpu = recent_cpu * coefficient */
   recent_cpu = FP_MULTIPLY(recent_cpu, coefficient);
   /* Recent_cpu += nice */
-  recent_cpu = FP_ADD_INT(recent_cpu, thr->nice);
+  recent_cpu = FP_ADD_INT(recent_cpu, t->nice);
 
-  thr->recent_cpu = recent_cpu;
+  t->recent_cpu = recent_cpu;
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
@@ -682,7 +670,7 @@ init_thread (struct thread *t, const char *name, int priority, int recent_cpu)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
-  /* Used only by BSD scheduler but it can be here. */
+  /* Used only by BSD scheduler but it can be here - it will be 0. */
   t->recent_cpu = recent_cpu;
   t->magic = THREAD_MAGIC;
  
@@ -830,6 +818,9 @@ yield_if_necessary (void)
 bool
 is_highest_priority (void)
 {
+  if (list_empty (&ready_list))
+    return true;
+  
   struct thread *first =
     list_entry (list_front (&ready_list), struct thread, elem);
   return (thread_current ()->priority == first->priority);
