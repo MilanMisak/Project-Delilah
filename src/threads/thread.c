@@ -540,8 +540,8 @@ thread_donate_priority (struct thread *donating_thread)
       struct donated_priority *donation = malloc (sizeof (struct donated_priority));
       donation->priority = donating_thread->priority;
       donation->blockinglock = donating_thread->blockinglock;
-      list_insert_ordered (&receiving_thread->donated_priorities, &donation->priorityelem,
-                           &has_higher_priority_donation, NULL);                       
+      list_insert_ordered (&receiving_thread->donated_priorities,
+                           &donation->priorityelem, &has_higher_priority_donation, NULL);
     } 
 
   thread_choose_priority(receiving_thread);
