@@ -261,7 +261,7 @@ lock_held_by_current_thread (const struct lock *lock)
 
   return lock->holder == thread_current ();
 }
-
+ema
 /* One semaphore in a list. */
 struct semaphore_elem 
   {

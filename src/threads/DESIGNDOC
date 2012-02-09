@@ -1,0 +1,265 @@
+            +-------------------+
+            |       OS 211      |
+            |  TASK 1: THREADS  |
+            |  DESIGN DOCUMENT  |
+            +-------------------+
+                   
+---- GROUP ----
+
+>> Fill in the names and email addresses of your group members.
+
+Milan Misak <email@domain.example>
+Jack Bracewell <email@domain.example>
+Craig Ellis <ce710@doc.ic.ac.uk>
+
+//TODO: add emails :)
+
+---- PRELIMINARIES ----
+
+>> If you have any preliminary comments on your submission, notes for the
+>> TAs, or extra credit, please give them here.
+
+>> Please cite any offline or online sources you consulted while
+>> preparing your submission, other than the Pintos documentation, course
+>> text, lecture notes, and course staff.
+
+                 ALARM CLOCK
+                 ===========
+
+---- DATA STRUCTURES ----
+
+>> A1: Copy here the declaration of each new or changed `struct' or
+>> `struct' member, global or static variable, `typedef', or
+>> enumeration.  Identify the purpose of each in 25 words or less.
+
+Added to struct thread:
+
+    int64_t ticks_when_awake;          /* Timer ticks count when awakened. */
+    struct list_elem sleepelem;        /* List element for sleeping list. */
+    struct semaphore sleepsema;        /* Semaphore to make a thread sleep
+                                          and wake it up. */
+
+
+---- ALGORITHMS ----
+
+>> A2: Briefly describe what happens in a call to timer_sleep(),
+>> including the effects of the timer interrupt handler.
+
+All that timer_sleep() does is make sure that interrupts are enabled, then
+call thread_sleep(). The value passed to thread_sleep() specifies on (or
+after) which tick the timer can be woken up. (The given value will be checked
+before schedule() chooses another thread to run).
+Similarly, the timer interrupt handler simply increments 'ticks', then calls
+thread_tick(). This will ncrement the appropriate one of 'idle_ticks',
+'user_ticks', or 'kernel_ticks', as before. The only change we have made is
+that it will also implement the BSD scheduler correctly.
+
+
+>> A3: What steps are taken to minimize the amount of time spent in
+>> the timer interrupt handler?
+
+Rather than check the sleeping threads on every tick, to see if they should be
+woken up, we only check them when schedule() is called. (The only change made
+to the calling of the interrupt handler is the implementation of the BSD
+scheduler).
+
+
+---- SYNCHRONIZATION ----
+
+>> A4: How are race conditions avoided when multiple threads call
+>> timer_sleep() simultaneously?
+
+//TODO: this question
+There are no race conditions when timer_sleep() is called, because
+thread_sleep() makes sure the only the current thread is calling it?
+IUNNOLOL :D
+
+
+>> A5: How are race conditions avoided when a timer interrupt occurs
+>> during a call to timer_sleep()?
+
+//TODO: also this question
+They... aren't? I mean, it looks to me as though the number of ticks 'til the
+thread wakes up could go either way (that is, if the interrupt occurs before
+or after the call to thread_sleep()).
+
+
+---- RATIONALE ----
+
+>> A6: Why did you choose this design?  In what ways is it superior to
+>> another design you considered?
+
+We chose this design to try to minimise the amont of time in interrupts. For
+example, we only wake sleeping threads when schedule() is called, and don't
+bother to check them on every tick.
+
+
+             PRIORITY SCHEDULING
+             ===================
+
+---- DATA STRUCTURES ----
+
+>> B1: Copy here the declaration of each new or changed `struct' or
+>> `struct' member, global or static variable, `typedef', or
+>> enumeration.  Identify the purpose of each in 25 words or less.
+
+Added to struct thread:
+
+    int self_set_priority;             /* Priority that has not been set
+                                          via donation. */
+    struct lock *blockinglock;         /* Lock causing the thread to block. */
+    struct list donated_priorities;    /* List of locks and donated priorities
+                                          for them. */
+
+Added to struct semaphore_elem:
+
+    struct thread *thread;             /* The thread waiting on the
+                                          condition */
+
+
+>> B2: Explain the data structure used to track priority donation.
+>> Use ASCII art to diagram a nested donation.  (Alternately, submit a
+>> .png file.)
+
+//TODO: kindly ask jack to do this? :D
+
+
+---- ALGORITHMS ----
+
+>> B3: How do you ensure that the highest priority thread waiting for
+>> a lock, semaphore, or condition variable wakes up first?
+
+Within both semaphores and condition variables, the waiting thread with the
+highest priority is simply found from the list each time (using the
+has_lower_priority() function). For conditions, this involved adding a
+pointer to the thread in each semaphore_elem, in order to find the correct
+priority.
+
+
+>> B4: Describe the sequence of events when a call to lock_acquire()
+>> causes a priority donation.  How is nested donation handled?
+
+//TODO: ask jack again :)
+
+
+>> B5: Describe the sequence of events when lock_release() is called
+>> on a lock that a higher-priority thread is waiting for.
+
+//TODO: aaaaand one more time :P
+
+
+---- SYNCHRONIZATION ----
+
+>> B6: Describe a potential race in thread_set_priority() and explain
+>> how your implementation avoids it.  Can you use a lock to avoid
+>> this race?
+
+//TODO: yeah, I still have no idea about these race conditions
+
+
+---- RATIONALE ----
+
+>> B7: Why did you choose this design?  In what ways is it superior to
+>> another design you considered?
+
+We considered storing the list of threads waiting on the synchronisation
+primitives in order of priority. However, this would have meant adding
+more code and storing more data when the priority of a thread changes.
+//TODO: jack may want to add to this
+
+              ADVANCED SCHEDULER
+              ==================
+
+---- DATA STRUCTURES ----
+
+>> C1: Copy here the declaration of each new or changed `struct' or
+>> `struct' member, global or static variable, `typedef', or
+>> enumeration.  Identify the purpose of each in 25 words or less.
+
+Added to struct thread:
+
+    int nice;                          /* Niceness. */
+    int recent_cpu;                    /* Measure of how much CPU time
+                                          a thread has received recently. */
+
+
+---- ALGORITHMS ----
+
+>> C2: Suppose threads A, B, and C have nice values 0, 1, and 2.  Each
+>> has a recent_cpu value of 0.  Fill in the table below showing the
+>> scheduling decision and the priority and recent_cpu values for each
+>> thread after each given number of timer ticks:
+
+//TODO: and now it's milan's turn :D
+
+timer  recent_cpu    priority   thread
+ticks   A   B   C   A   B   C   to run
+-----  --  --  --  --  --  --   ------
+ 0
+ 4
+ 8
+12
+16
+20
+24
+28
+32
+36
+
+
+>> C3: Did any ambiguities in the scheduler specification make values
+>> in the table uncertain?  If so, what rule did you use to resolve
+>> them?  Does this match the behaviour of your scheduler?
+
+//TODO: because i haven't a clue about this part
+
+
+>> C4: How is the way you divided the cost of scheduling between code
+>> inside and outside interrupt context likely to affect performance?
+
+//TODO: yep, milan again
+
+
+---- RATIONALE ----
+
+>> C5: Briefly critique your design, pointing out advantages and
+>> disadvantages in your design choices.  If you were to have extra
+>> time to work on this part of the task, how might you choose to
+>> refine or improve your design?
+
+//TODO: and again
+
+
+>> C6: The assignment explains arithmetic for fixed-point mathematics in
+>> detail, but it leaves it open to you to implement it.  Why did you
+>> decide to implement it the way you did?  If you created an
+>> abstraction layer for fixed-point mathematics, that is, an abstract
+>> data type and/or a set of functions or macros to manipulate
+>> fixed-point numbers, why did you do so?  If not, why not?
+
+//TODO: last one :)
+
+
+               SURVEY QUESTIONS
+               ================
+
+Answering these questions is optional, but it will help us improve the
+course in future quarters.  Feel free to tell us anything you
+want--these questions are just to spur your thoughts.  You may also
+choose to respond anonymously in the course evaluations at the end of
+the quarter.
+
+>> In your opinion, was this assignment, or any one of the three problems
+>> in it, too easy or too hard?  Did it take too long or too little time?
+
+>> Did you find that working on a particular part of the assignment gave
+>> you greater insight into some aspect of OS design?
+
+>> Is there some particular fact or hint we should give students in
+>> future quarters to help them solve the problems?  Conversely, did you
+>> find any of our guidance to be misleading?
+
+>> Do you have any suggestions for the TAs to more effectively assist
+>> students, either for future quarters or the remaining tasks?
+
+>> Any other comments?
