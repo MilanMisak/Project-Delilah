@@ -116,6 +116,17 @@ Added to struct semaphore_elem:
     struct thread *thread;             /* The thread waiting on the
                                           condition */
 
+New struct:
+
+struct donated_priority
+  {
+    struct lock *blocking_lock;     /* The lock causing priority to be 
+                                       donated. */
+    int priority;                   /* The priority donated. */
+    struct list_elem priority_elem; /* Element in a thread's donated
+                                       priority list.*/
+  };
+
 
 >> B2: Explain the data structure used to track priority donation.
 >> Use ASCII art to diagram a nested donation.  (Alternately, submit a
@@ -209,6 +220,13 @@ released.
 
 //TODO: aaaaand one more time :P
 
+The holder field of the lock is set to NULL, and thread_remove_priority()
+is called with the current thread and lock as parameters. This simply 
+removes the donated_priority struct associated with the lock from the
+thread's donated_priorities list, and free's the memory.
+thread_choose_priority() is then called to update the thread's priority,
+sema_up() is finally called to release the lock.
+
 
 ---- SYNCHRONIZATION ----
 
@@ -228,6 +246,28 @@ We considered storing the list of threads waiting on the synchronisation
 primitives in order of priority. However, this would have meant adding
 more code and storing more data when the priority of a thread changes.
 //TODO: jack may want to add to this
+
+As far as priority donation is concerned, it soon became clear that a
+list of donated priorities would be needed to handle multiple donation,
+with a seperate variable to allow the thread's directly set priority to
+be preserved.
+
+An option considered was that the priority_donation structs would contain
+pointers to the thread's that the priorities should be stored in a hash table
+opposed to a list, to allow values to be removed in constant time. But the 
+benefit of using an ordered list instead was that the highest priority could
+be accessed from the head of the list, an ordered hashtable would have to
+be written to accomplish this. It was then decided that given the small number
+of priorities likely to be donated, this approach would be slower in practice
+than the ordered list, even if it had better time complexity.
+
+It was also discussed that the priority field should be removed from the
+thread struct, and there should be a get_priority() function to return
+either the set priority, or the head of the donated priorities. But it was
+decided that the priority of a thread was going to be required to be
+calculated too often with this method, and it would be better to call a
+method to set the field, which became thread_choose_priority().
+
 
               ADVANCED SCHEDULER
               ==================
