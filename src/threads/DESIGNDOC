@@ -139,8 +139,38 @@ priority.
 >> B4: Describe the sequence of events when a call to lock_acquire()
 >> causes a priority donation.  How is nested donation handled?
 
-//TODO: ask jack again :)
+First, the lock will try to be acquired with sema_try_down(), as not
+to immediately block if it fails. When sema_try_down() returns false, the
+blocking_lock field of the current thread is set to a pointer of the
+lock trying to be acquired. The procedure thread_donate_priority() is then
+called, with the current thread as its argument.
 
+In thread_donate_priority(), the procedure will immediately return if 
+there is no lock blocking the thread (base case of recursive call). The 
+thread recieving donation is then found as the blocking_lock's holder.
+The next task is to traverse the donated_priorities list in the recieving
+thread, if a priority has been donated for the same lock and it is smaller
+than the current thread's priority, then the priority is set to that of
+the current thread. If the priority is greater than the current thread then
+the function returns, as there is no point donating a lower priority for the
+same lock.
+
+If no priority has been donated for this lock, then a new donated_priority
+struct is malloced and inserted into the ordered list of donated priorities
+for the recieving thread. The list is ordered by priority and is kept
+in descending order.
+
+thread_choose_priority is then called on the receiving thread. This function 
+basically compares the values of the priority set by the thread, and the head
+of the donated priorities list, and then sets the priority field to whichever 
+is highest.
+
+thread_donate_priority() is now called again on the receiving thread, which
+gives it the chance to donate if nested donation is required. After this 
+the function exits.
+
+Finally, sema_down() is called and the thread waits for the lock to be
+released.
 
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.
