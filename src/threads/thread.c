@@ -491,9 +491,13 @@ thread_set_priority (int new_priority)
 void
 thread_choose_priority (struct thread *t)
 {
+
   t->priority = t->self_set_priority;
+
+  sema_down (&t->priority_lock);
   if (!list_empty (&t->donated_priorities))
-  {    
+  {
+
     struct donated_priority *d =
         list_entry (list_front (&t->donated_priorities),
                     struct donated_priority, priority_elem);
@@ -502,14 +506,16 @@ thread_choose_priority (struct thread *t)
     {
       t->priority = d->priority;
     }
+
   }
+  sema_up (&t->priority_lock);
 }
 
 /* TODO - Teach Jack to write todos. */
 void       
-thread_donate_priority (struct thread *donating_thread)
+thread_donate_priority (struct thread *donating_thread, int level)
 {
-  if (donating_thread->blocking_lock == NULL)
+  if (donating_thread->blocking_lock == NULL || level == 8)
     { 
       return;
     }
@@ -517,6 +523,9 @@ thread_donate_priority (struct thread *donating_thread)
   struct thread *receiving_thread = donating_thread->blocking_lock->holder;
   struct list_elem *e;
   bool priority_in_list = false;
+
+
+  sema_down (&receiving_thread->priority_lock);
 
   for (e = list_begin (&receiving_thread->donated_priorities);
        e != list_end (&receiving_thread->donated_priorities);
@@ -531,8 +540,10 @@ thread_donate_priority (struct thread *donating_thread)
           if (donating_thread->priority > d->priority)
             {
               d->priority = donating_thread->priority;
+              sema_up (&receiving_thread->priority_lock);
               break; 
             }
+          sema_up (&receiving_thread->priority_lock);
           return;       
         }             
     }
@@ -546,10 +557,13 @@ thread_donate_priority (struct thread *donating_thread)
       list_insert_ordered (&receiving_thread->donated_priorities,
                            &donation->priority_elem,
                            &has_higher_priority_donation, NULL);
-    } 
+      sema_up (&receiving_thread->priority_lock);
+    }
+
+
 
   thread_choose_priority(receiving_thread);
-  thread_donate_priority(receiving_thread);
+  thread_donate_priority(receiving_thread, ++level);
 }
 
 /* TODO - Jack is  a buffoon*/
@@ -557,7 +571,7 @@ void
 thread_remove_priority (struct thread *t, struct lock *l)
 {  
   struct list_elem *e;
-          
+         
   for (e = list_begin (&t->donated_priorities);
        e != list_end (&t->donated_priorities);        
        e = list_next (e))
@@ -567,7 +581,9 @@ thread_remove_priority (struct thread *t, struct lock *l)
       
       if (d->blocking_lock == l)
         {
+          sema_down (&t->priority_lock);
           list_remove (e);
+          sema_up (&t->priority_lock);
           free (d);
           return;
         }
@@ -780,6 +796,7 @@ init_thread (struct thread *t, const char *name, int priority,
  
   sema_init (&t->sleep_sema, 0);
   list_init (&t->donated_priorities);
+  sema_init (&t->priority_lock, 1);
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);

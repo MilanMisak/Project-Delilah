@@ -96,12 +96,14 @@ struct thread
                                            a thread received recently. */
     struct list_elem allelem;           /* List element for all threads list. */
     int64_t ticks_when_awake;           /* Timer ticks count when awakened. */
-    struct list_elem sleep_elem;         /* List element for sleeping list. */
-    struct semaphore sleep_sema;         /* Semaphore to make a thread sleep
+    struct list_elem sleep_elem;        /* List element for sleeping list. */
+    struct semaphore sleep_sema;        /* Semaphore to make a thread sleep
                                            and wake it up. */
-    struct lock *blocking_lock;          /* Lock causing the thread to block. */
+    struct lock *blocking_lock;         /* Lock causing the thread to block. */
     struct list donated_priorities;     /* List of locks and donated priorities
                                            for them. */
+    struct semaphore priority_lock;     /* Lock to control access to donated
+                                           priorities */
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -147,7 +149,7 @@ void thread_foreach (thread_action_func *, void *);
 
 int thread_get_priority (void);
 void thread_choose_priority (struct thread *t);
-void thread_donate_priority (struct thread *t);
+void thread_donate_priority (struct thread *t, int level);
 void thread_remove_priority (struct thread *t, struct lock *l);
 void thread_set_priority (int);
 int thread_get_nice (void);
