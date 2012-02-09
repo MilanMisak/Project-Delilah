@@ -9,10 +9,8 @@
 >> Fill in the names and email addresses of your group members.
 
 Milan Misak <mm5510@imperial.ac.uk>
-Jack Bracewell <email@domain.example>
+Jack Bracewell <jb910@doc.ic.ac.uk>
 Craig Ellis <ce710@doc.ic.ac.uk>
-
-//TODO: Jack's email
 
 ---- PRELIMINARIES ----
 
@@ -132,8 +130,17 @@ struct donated_priority
 >> Use ASCII art to diagram a nested donation.  (Alternately, submit a
 >> .png file.)
 
-//TODO: kindly ask jack to do this? :D
+The tracking system for priority donation only allows for threads to be
+tracked that need to be donated to, there is no way of knowing where
+a donation has come from from the receiving thread's point of view,
+because it does not need to know.
 
+When trying to track down threads a thread needs to donate to, it simply
+looks at the blocking_lock (the lock that is causing the thread to block),
+it then can see which thread it needs to donate to by the holder field in
+the lock struct. When the receiving thread gets this new priority, it can
+apply the same principles to track down the thread it needs to pass on the
+donation to if need be.
 
 
                                         +==============================+
@@ -240,8 +247,6 @@ released.
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.
 
-//TODO: aaaaand one more time :P
-
 The holder field of the lock is set to NULL, and thread_remove_priority()
 is called with the current thread and lock as parameters. This simply 
 removes the donated_priority struct associated with the lock from the
@@ -267,7 +272,6 @@ sema_up() is finally called to release the lock.
 We considered storing the list of threads waiting on the synchronisation
 primitives in order of priority. However, this would have meant adding
 more code and storing more data when the priority of a thread changes.
-//TODO: jack may want to add to this
 
 As far as priority donation is concerned, it soon became clear that a
 list of donated priorities would be needed to handle multiple donation,
