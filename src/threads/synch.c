@@ -261,7 +261,7 @@ lock_held_by_current_thread (const struct lock *lock)
 
   return lock->holder == thread_current ();
 }
-ema
+
 /* One semaphore in a list. */
 struct semaphore_elem 
   {
@@ -363,7 +363,8 @@ cond_broadcast (struct condition *cond, struct lock *lock)
 /* Used to order donated priorities in descending order */
 bool
 has_higher_priority_donation (const struct list_elem *elem_1,
-                              const struct list_elem *elem_2, void *aux)
+                              const struct list_elem *elem_2,
+                              void *aux UNUSED)
 {
   struct donated_priority *priority_1 = 
       list_entry (elem_1, struct donated_priority, priority_elem);
@@ -375,7 +376,8 @@ has_higher_priority_donation (const struct list_elem *elem_1,
 /* Used to find the maximum in a list of semaphore_elems. */
 bool
 sema_elem_has_lower_priority (const struct list_elem *elem_1,
-                              const struct list_elem *elem_2, void *aux)
+                              const struct list_elem *elem_2,
+                              void *aux UNUSED)
 {
   struct thread *thread_1 = list_entry (elem_1, struct semaphore_elem,
                                         elem)->thread;
