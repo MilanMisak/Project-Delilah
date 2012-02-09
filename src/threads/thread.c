@@ -340,10 +340,13 @@ thread_sleep (int64_t ticks_when_awake)
     sema_down (&cur->sleep_sema);
 }
 
-//TODO - comment wake up
+/* Wakes up all the sleeping threads that can be awoken at this time
+   (in terms of total timer ticks). */
 void
-thread_wake_up (int64_t timer_ticks)
+thread_wake_up (void)
 {
+  int ticks = timer_ticks();
+
   sema_down (&sleep_sema);
   
   struct list_elem *e;
@@ -353,7 +356,7 @@ thread_wake_up (int64_t timer_ticks)
       struct thread *t = list_entry (e, struct thread, sleep_elem);
 
       /* If the first thread can't wake up now neither can any other. */
-      if (t->ticks_when_awake > timer_ticks)
+      if (t->ticks_when_awake > ticks)
         {
           break;
         }
@@ -363,7 +366,6 @@ thread_wake_up (int64_t timer_ticks)
     }
   
   sema_up (&sleep_sema);
-
 }
 
 /* Returns true if the thread in elem_1 should wake up earlier than
@@ -872,7 +874,7 @@ schedule (void)
 {
   /* Wake up any threads that can be woken up. */
   wake_up_running = true;
-  thread_wake_up (timer_ticks());
+  thread_wake_up ();
   wake_up_running = false;
 
   struct thread *cur = running_thread ();
