@@ -205,7 +205,7 @@ lock_acquire (struct lock *lock)
   
   if (!success)
     {
-      thread_current ()->blockinglock = lock;
+      thread_current ()->blocking_lock = lock;
       thread_donate_priority (thread_current ());
       sema_down (&lock->semaphore);
     }
@@ -266,7 +266,8 @@ lock_held_by_current_thread (const struct lock *lock)
 struct semaphore_elem 
   {
     struct list_elem elem;              /* List element. */
-    struct thread *thread;              /* The thread waiting on the condition. */
+    struct thread *thread;              /* The thread waiting on the
+                                           condition. */
     struct semaphore semaphore;         /* This semaphore. */
   };
 
@@ -365,9 +366,9 @@ has_higher_priority_donation (const struct list_elem *elem_1,
                               const struct list_elem *elem_2, void *aux)
 {
   struct donated_priority *priority_1 = 
-      list_entry (elem_1, struct donated_priority, priorityelem);
+      list_entry (elem_1, struct donated_priority, priority_elem);
    struct donated_priority *priority_2 =
-             list_entry (elem_2, struct donated_priority, priorityelem);
+             list_entry (elem_2, struct donated_priority, priority_elem);
   return (priority_1->priority > priority_2->priority);
 }
 

@@ -40,7 +40,7 @@ static struct list all_list;
 static struct list sleeping_list;
 
 /* Semaphore for accessing the sleeping_list */
-static struct semaphore sleepsema;
+static struct semaphore sleep_sema;
 
 /* Idle thread. */
 static struct thread *idle_thread;
@@ -124,7 +124,7 @@ thread_init (void)
 
   ready_count = 0;
 
-  sema_init (&sleepsema, 1);
+  sema_init (&sleep_sema, 1);
   wake_up_running = false;
 
   /* Initialised to 0, but needs to be converted to fixed-point arithmetic. */
@@ -316,7 +316,7 @@ thread_unblock (struct thread *t)
   list_insert_ordered (&ready_list, &t->elem, &has_higher_priority, NULL);
   ready_count++;
   t->status = THREAD_READY;
-  t->blockinglock = NULL;
+  t->blocking_lock = NULL;
   intr_set_level (old_level);
 }
 
@@ -330,27 +330,27 @@ thread_sleep (int64_t ticks_when_awake)
 
     cur->ticks_when_awake = ticks_when_awake;
     
-    sema_down (&sleepsema);
+    sema_down (&sleep_sema);
     // We want to insert threads into sleeping_list ordered.
-    list_insert_ordered (&sleeping_list, &cur->sleepelem,
+    list_insert_ordered (&sleeping_list, &cur->sleep_elem,
                          &wakes_up_earlier, NULL);
-    sema_up (&sleepsema);
+    sema_up (&sleep_sema);
     
     /*Put the thread to sleep */
-    sema_down (&cur->sleepsema);
+    sema_down (&cur->sleep_sema);
 }
 
 //TODO - comment wake up
 void
 thread_wake_up (int64_t timer_ticks)
 {
-  sema_down (&sleepsema);
+  sema_down (&sleep_sema);
   
   struct list_elem *e;
   for (e = list_begin (&sleeping_list); e != list_end (&sleeping_list);
        e = list_next (e))
     {
-      struct thread *t = list_entry (e, struct thread, sleepelem);
+      struct thread *t = list_entry (e, struct thread, sleep_elem);
 
       /* If the first thread can't wake up now neither can any other. */
       if (t->ticks_when_awake > timer_ticks)
@@ -358,11 +358,11 @@ thread_wake_up (int64_t timer_ticks)
           break;
         }
 
-      list_remove (&t->sleepelem);
-      sema_up (&t->sleepsema);
+      list_remove (&t->sleep_elem);
+      sema_up (&t->sleep_sema);
     }
   
-  sema_up (&sleepsema);
+  sema_up (&sleep_sema);
 
 }
 
@@ -372,8 +372,8 @@ bool
 wakes_up_earlier (const struct list_elem *elem_1,
     const struct list_elem *elem_2, void *aux UNUSED)
 {
-  struct thread *thread_1 = list_entry (elem_1, struct thread, sleepelem);
-  struct thread *thread_2 = list_entry (elem_2, struct thread, sleepelem);
+  struct thread *thread_1 = list_entry (elem_1, struct thread, sleep_elem);
+  struct thread *thread_2 = list_entry (elem_2, struct thread, sleep_elem);
   return thread_1->ticks_when_awake < thread_2->ticks_when_awake;
 }
 
@@ -494,7 +494,7 @@ thread_choose_priority (struct thread *t)
   {    
     struct donated_priority *d =
         list_entry (list_front (&t->donated_priorities),
-                    struct donated_priority, priorityelem);
+                    struct donated_priority, priority_elem);
 
     if (d->priority > t->priority)
     {
@@ -507,12 +507,12 @@ thread_choose_priority (struct thread *t)
 void       
 thread_donate_priority (struct thread *donating_thread)
 {
-  if (donating_thread->blockinglock == NULL)
+  if (donating_thread->blocking_lock == NULL)
     { 
       return;
     }
 
-  struct thread *receiving_thread = donating_thread->blockinglock->holder;
+  struct thread *receiving_thread = donating_thread->blocking_lock->holder;
   struct list_elem *e;
   bool priority_in_list = false;
 
@@ -521,9 +521,9 @@ thread_donate_priority (struct thread *donating_thread)
        e = list_next (e))
     {
       struct donated_priority *d =
-          list_entry (e, struct donated_priority, priorityelem);
+          list_entry (e, struct donated_priority, priority_elem);
 
-      if (d->blockinglock == donating_thread->blockinglock)
+      if (d->blocking_lock == donating_thread->blocking_lock)
         {
           priority_in_list = true;
           if (donating_thread->priority > d->priority)
@@ -539,9 +539,9 @@ thread_donate_priority (struct thread *donating_thread)
     {
       struct donated_priority *donation = malloc (sizeof (struct donated_priority));
       donation->priority = donating_thread->priority;
-      donation->blockinglock = donating_thread->blockinglock;
+      donation->blocking_lock = donating_thread->blocking_lock;
       list_insert_ordered (&receiving_thread->donated_priorities,
-                           &donation->priorityelem, &has_higher_priority_donation, NULL);
+                           &donation->priority_elem, &has_higher_priority_donation, NULL);
     } 
 
   thread_choose_priority(receiving_thread);
@@ -559,9 +559,9 @@ thread_remove_priority (struct thread *t, struct lock *l)
        e = list_next (e))
     {
       struct donated_priority *d =
-      list_entry (e, struct donated_priority, priorityelem);
+      list_entry (e, struct donated_priority, priority_elem);
       
-      if (d->blockinglock == l)
+      if (d->blocking_lock == l)
         {
           list_remove (e);
           return;
@@ -773,7 +773,7 @@ init_thread (struct thread *t, const char *name, int priority,
   t->nice = nice;
   t->magic = THREAD_MAGIC;
  
-  sema_init (&t->sleepsema, 0);
+  sema_init (&t->sleep_sema, 0);
   list_init (&t->donated_priorities);
 
   old_level = intr_disable ();

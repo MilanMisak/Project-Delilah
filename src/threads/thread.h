@@ -90,16 +90,16 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
     int self_set_priority;              /* Priority that has not been set
-                                           via donation */
+                                           via donation. */
     int nice;                           /* Niceness. */
     int recent_cpu;                     /* Measure of how much CPU time
                                            a thread received recently. */
     struct list_elem allelem;           /* List element for all threads list. */
     int64_t ticks_when_awake;           /* Timer ticks count when awakened. */
-    struct list_elem sleepelem;         /* List element for sleeping list. */
-    struct semaphore sleepsema;         /* Semaphore to make a thread sleep
+    struct list_elem sleep_elem;         /* List element for sleeping list. */
+    struct semaphore sleep_sema;         /* Semaphore to make a thread sleep
                                            and wake it up. */
-    struct lock *blockinglock;          /* Lock causing the thread to block. */
+    struct lock *blocking_lock;          /* Lock causing the thread to block. */
     struct list donated_priorities;     /* List of locks and donated priorities
                                            for them. */
 
