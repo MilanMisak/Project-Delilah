@@ -537,7 +537,8 @@ thread_donate_priority (struct thread *donating_thread)
   
   if (!priority_in_list)
     {
-      struct donated_priority *donation = malloc (sizeof (struct donated_priority));
+      struct donated_priority *donation = malloc 
+          (sizeof (struct donated_priority));
       donation->priority = donating_thread->priority;
       donation->blocking_lock = donating_thread->blocking_lock;
       list_insert_ordered (&receiving_thread->donated_priorities,
@@ -565,6 +566,7 @@ thread_remove_priority (struct thread *t, struct lock *l)
       if (d->blocking_lock == l)
         {
           list_remove (e);
+          free (d);
           return;
         }
     }
