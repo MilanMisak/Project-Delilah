@@ -99,7 +99,8 @@ struct thread
     struct list_elem sleep_elem;         /* List element for sleeping list. */
     struct semaphore sleep_sema;         /* Semaphore to make a thread sleep
                                            and wake it up. */
-    struct lock *blocking_lock;          /* Lock causing the thread to block. */
+    struct lock *blocking_lock;          /* Lock causing the thread to
+                                            block. */
     struct list donated_priorities;     /* List of locks and donated priorities
                                            for them. */
 

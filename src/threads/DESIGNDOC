@@ -124,7 +124,6 @@ Added to struct semaphore_elem:
 //TODO: kindly ask jack to do this? :D
 
 
-
                                         +==============================+
                                         |           thread 1           |
                                         +------------------------------+
@@ -177,7 +176,6 @@ Added to struct semaphore_elem:
 
 
 
-
 ---- ALGORITHMS ----
 
 >> B3: How do you ensure that the highest priority thread waiting for
@@ -208,7 +206,7 @@ priority.
 >> how your implementation avoids it.  Can you use a lock to avoid
 >> this race?
 
-//TODO: yeah, I still have no idea about these race conditions
+
 
 
 ---- RATIONALE ----
