@@ -27,10 +27,10 @@ struct lock
 struct donated_priority
   {
    struct lock *blocking_lock;     /* The lock causing priority to be 
-                                     donated. */
-   int priority;                  /* The priority donated. */
-   struct list_elem priority_elem; /* Element in a thread's donated priority 
-                                     list.*/
+                                      donated. */
+   int priority;                   /* The priority donated. */
+   struct list_elem priority_elem; /* Element in a thread's donated
+                                      priority list.*/
   };
 
 void lock_init (struct lock *);
