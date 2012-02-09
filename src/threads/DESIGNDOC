@@ -9,10 +9,8 @@
 >> Fill in the names and email addresses of your group members.
 
 Milan Misak <mm5510@imperial.ac.uk>
-Jack Bracewell <email@domain.example>
+Jack Bracewell <jb910@doc.ic.ac.uk>
 Craig Ellis <ce710@doc.ic.ac.uk>
-
-//TODO: Jack's email
 
 ---- PRELIMINARIES ----
 
@@ -116,13 +114,33 @@ Added to struct semaphore_elem:
     struct thread *thread;             /* The thread waiting on the
                                           condition */
 
+New struct:
+
+struct donated_priority
+  {
+    struct lock *blocking_lock;     /* The lock causing priority to be 
+                                       donated. */
+    int priority;                   /* The priority donated. */
+    struct list_elem priority_elem; /* Element in a thread's donated
+                                       priority list.*/
+  };
+
 
 >> B2: Explain the data structure used to track priority donation.
 >> Use ASCII art to diagram a nested donation.  (Alternately, submit a
 >> .png file.)
 
-//TODO: kindly ask jack to do this? :D
+The tracking system for priority donation only allows for threads to be
+tracked that need to be donated to, there is no way of knowing where
+a donation has come from from the receiving thread's point of view,
+because it does not need to know.
 
+When trying to track down threads a thread needs to donate to, it simply
+looks at the blocking_lock (the lock that is causing the thread to block),
+it then can see which thread it needs to donate to by the holder field in
+the lock struct. When the receiving thread gets this new priority, it can
+apply the same principles to track down the thread it needs to pass on the
+donation to if need be.
 
                                         +==============================+
                                         |           thread 1           |
@@ -191,13 +209,48 @@ priority.
 >> B4: Describe the sequence of events when a call to lock_acquire()
 >> causes a priority donation.  How is nested donation handled?
 
-//TODO: ask jack again :)
+First, the lock will try to be acquired with sema_try_down(), as not
+to immediately block if it fails. When sema_try_down() returns false, the
+blocking_lock field of the current thread is set to a pointer of the
+lock trying to be acquired. The procedure thread_donate_priority() is then
+called, with the current thread as its argument.
 
+In thread_donate_priority(), the procedure will immediately return if 
+there is no lock blocking the thread (base case of recursive call). The 
+thread recieving donation is then found as the blocking_lock's holder.
+The next task is to traverse the donated_priorities list in the recieving
+thread, if a priority has been donated for the same lock and it is smaller
+than the current thread's priority, then the priority is set to that of
+the current thread. If the priority is greater than the current thread then
+the function returns, as there is no point donating a lower priority for the
+same lock.
+
+If no priority has been donated for this lock, then a new donated_priority
+struct is malloced and inserted into the ordered list of donated priorities
+for the recieving thread. The list is ordered by priority and is kept
+in descending order.
+
+thread_choose_priority is then called on the receiving thread. This function 
+basically compares the values of the priority set by the thread, and the head
+of the donated priorities list, and then sets the priority field to whichever 
+is highest.
+
+thread_donate_priority() is now called again on the receiving thread, which
+gives it the chance to donate if nested donation is required. After this 
+the function exits.
+
+Finally, sema_down() is called and the thread waits for the lock to be
+released.
 
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.
 
-//TODO: aaaaand one more time :P
+The holder field of the lock is set to NULL, and thread_remove_priority()
+is called with the current thread and lock as parameters. This simply 
+removes the donated_priority struct associated with the lock from the
+thread's donated_priorities list, and free's the memory.
+thread_choose_priority() is then called to update the thread's priority,
+sema_up() is finally called to release the lock.
 
 
 ---- SYNCHRONIZATION ----
@@ -217,7 +270,28 @@ priority.
 We considered storing the list of threads waiting on the synchronisation
 primitives in order of priority. However, this would have meant adding
 more code and storing more data when the priority of a thread changes.
-//TODO: jack may want to add to this
+
+As far as priority donation is concerned, it soon became clear that a
+list of donated priorities would be needed to handle multiple donation,
+with a seperate variable to allow the thread's directly set priority to
+be preserved.
+
+An option considered was that the priority_donation structs would contain
+pointers to the thread's that the priorities should be stored in a hash table
+opposed to a list, to allow values to be removed in constant time. But the 
+benefit of using an ordered list instead was that the highest priority could
+be accessed from the head of the list, an ordered hashtable would have to
+be written to accomplish this. It was then decided that given the small number
+of priorities likely to be donated, this approach would be slower in practice
+than the ordered list, even if it had better time complexity.
+
+It was also discussed that the priority field should be removed from the
+thread struct, and there should be a get_priority() function to return
+either the set priority, or the head of the donated priorities. But it was
+decided that the priority of a thread was going to be required to be
+calculated too often with this method, and it would be better to call a
+method to set the field, which became thread_choose_priority().
+
 
               ADVANCED SCHEDULER
               ==================
