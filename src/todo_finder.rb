@@ -1,6 +1,6 @@
 DIRS = ["devices", "lib", "threads"]
 IGNORED_DIRS = [/\./, /\.\./, /build/]
-FILE_PATTERNS = [/\.c$/, /\.h$/]
+FILE_PATTERNS = [/\.c$/, /\.h$/, /^DESIGNDOC$/]
 
 MAX_LINE_LENGTH = 79
 PERSON_PATTERN = /\((.*) \d{4}-\d{2}-\d{2}/
