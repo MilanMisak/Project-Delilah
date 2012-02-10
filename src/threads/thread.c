@@ -321,7 +321,7 @@ thread_unblock (struct thread *t)
   intr_set_level (old_level);
 }
 
-//TODO - comment
+/* Puts threads to sleep (blocks it) for at least the given number of ticks */
 void
 thread_sleep (int64_t ticks_when_awake)
 {
@@ -520,11 +520,12 @@ thread_choose_priority (struct thread *t)
   sema_up (&t->priority_sema);
 }
 
-/* TODO - Teach Jack to write todos. */
+/* Called when a thread cannot acquire a lock, donates priority to the lock
+   owner and threads causing that to block if necessary.*/
 void       
-thread_donate_priority (struct thread *donating_thread, int level)
+thread_donate_priority (struct thread *donating_thread)
 {
-  if (donating_thread->blocking_lock == NULL || level == 8)
+  if (donating_thread->blocking_lock == NULL)
     { 
       return;
     }
@@ -570,10 +571,11 @@ thread_donate_priority (struct thread *donating_thread, int level)
     }
 
   thread_choose_priority(receiving_thread);
-  thread_donate_priority(receiving_thread, ++level);
+  thread_donate_priority(receiving_thread);
 }
 
-/* TODO - Jack is  a buffoon*/
+/* Removes a donated priority from a thread (if it exists) for the
+   corresponding lock. Called when a thread releases a lock. */
 void
 thread_remove_priority (struct thread *t, struct lock *l)
 {  

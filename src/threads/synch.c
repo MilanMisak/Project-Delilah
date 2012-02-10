@@ -206,7 +206,7 @@ lock_acquire (struct lock *lock)
   if (!success)
     {
       thread_current ()->blocking_lock = lock;
-      thread_donate_priority (thread_current (), 0);
+      thread_donate_priority (thread_current ());
       sema_down (&lock->semaphore);
     }
 
