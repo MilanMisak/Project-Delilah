@@ -391,7 +391,15 @@ of load_avg and nice.
 >> C4: How is the way you divided the cost of scheduling between code
 >> inside and outside interrupt context likely to affect performance?
 
-//TODO: I don't bloody know. Will be slow? 
+Minimal amount of code was put inside interrupt context. This includes
+all the necessary calculations of threads' recent_cpu and priority values
+as well as the system load_average. These need to be executed at regular
+intervals based on the system clock.
+
+The rest of the scheduling code is outside of the interrupt context
+(it runs inside a kernel thread). Therefore the performance is kept
+as high as possible because only the current kernel thread is being slowed
+down by this code (not the entire system).
 
 
 ---- RATIONALE ----

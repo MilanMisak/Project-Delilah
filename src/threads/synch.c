@@ -368,8 +368,8 @@ has_higher_priority_donation (const struct list_elem *elem_1,
 {
   struct donated_priority *priority_1 = 
       list_entry (elem_1, struct donated_priority, priority_elem);
-   struct donated_priority *priority_2 =
-             list_entry (elem_2, struct donated_priority, priority_elem);
+  struct donated_priority *priority_2 =
+      list_entry (elem_2, struct donated_priority, priority_elem);
   return (priority_1->priority > priority_2->priority);
 }
 
@@ -379,10 +379,10 @@ sema_elem_has_lower_priority (const struct list_elem *elem_1,
                               const struct list_elem *elem_2,
                               void *aux UNUSED)
 {
-  struct thread *thread_1 = list_entry (elem_1, struct semaphore_elem,
-                                        elem)->thread;
-  struct thread *thread_2 = list_entry (elem_2, struct semaphore_elem,
-                                        elem)->thread;
+  struct thread *thread_1 =
+      list_entry (elem_1, struct semaphore_elem, elem)->thread;
+  struct thread *thread_2 =
+      list_entry (elem_2, struct semaphore_elem, elem)->thread;
   return (thread_1->priority < thread_2->priority);
 }
 

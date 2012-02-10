@@ -180,17 +180,15 @@ thread_tick (void)
 
     /* Increment recent_cpu of the current thread unless it is idle. */
     if (t != idle_thread)
-    {
       t->recent_cpu = FP_ADD_INT(t->recent_cpu, 1);
-    }
 
     /* Recalculate recent_cpu for every thread and system load average
        once per second. */
     if (ticks % TIMER_FREQ == 0)
-    {
-      thread_recalculate_load_avg ();
-      thread_foreach (&thread_recalculate_recent_cpu, NULL);
-    }
+      {
+        thread_recalculate_load_avg ();
+        thread_foreach (&thread_recalculate_recent_cpu, NULL);
+      }
     
     /* Recalculate priorities of all the threads every fourth clock tick. */
     if (ticks % 4 == 0)
@@ -245,7 +243,7 @@ thread_create (const char *name, int priority,
 
   /* Initialize thread. */
   init_thread (t, name, priority, thread_get_recent_cpu (),
-      thread_get_nice ());
+               thread_get_nice ());
   /* Need to have a thread struct before calculating priority. */
   if (thread_mlfqs)
     t->priority = thread_calculate_priority (t); 
@@ -332,12 +330,12 @@ thread_sleep (int64_t ticks_when_awake)
     cur->ticks_when_awake = ticks_when_awake;
     
     sema_down (&sleep_sema);
-    // We want to insert threads into sleeping_list ordered.
+    /* We want to insert threads into sleeping_list ordered. */
     list_insert_ordered (&sleeping_list, &cur->sleep_elem,
                          &wakes_up_earlier, NULL);
     sema_up (&sleep_sema);
     
-    /*Put the thread to sleep */
+    /* Put the thread to sleep */
     sema_down (&cur->sleep_sema);
 }
 
@@ -348,8 +346,7 @@ thread_wake_up (void)
 {
   int ticks = timer_ticks();
 
-  if(!sema_try_down (&sleep_sema))
-    return;
+  sema_down (&sleep_sema);
   
   struct list_elem *e;
   for (e = list_begin (&sleeping_list); e != list_end (&sleeping_list);
@@ -359,9 +356,7 @@ thread_wake_up (void)
 
       /* If the first thread can't wake up now neither can any other. */
       if (t->ticks_when_awake > ticks)
-        {
-          break;
-        }
+        break;
 
       list_remove (&t->sleep_elem);
       sema_up (&t->sleep_sema);
@@ -447,10 +442,10 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread) 
-  {
-    list_insert_ordered (&ready_list, &cur->elem, &has_higher_priority, NULL);
-    ready_count++;
-  }
+    {
+      list_insert_ordered (&ready_list, &cur->elem, &has_higher_priority, NULL);
+      ready_count++;
+    }
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -505,17 +500,13 @@ thread_choose_priority (struct thread *t)
 
   sema_down (&t->priority_sema);
   if (!list_empty (&t->donated_priorities))
-  {
-
-    struct donated_priority *d =
-        list_entry (list_front (&t->donated_priorities),
-                    struct donated_priority, priority_elem);
-
-    if (d->priority > t->priority)
     {
-      t->priority = d->priority;
-    }
+      struct donated_priority *d =
+          list_entry (list_front (&t->donated_priorities),
+                      struct donated_priority, priority_elem);
 
+      if (d->priority > t->priority)
+        t->priority = d->priority;
   }
   sema_up (&t->priority_sema);
 }
@@ -526,14 +517,11 @@ void
 thread_donate_priority (struct thread *donating_thread)
 {
   if (donating_thread->blocking_lock == NULL)
-    { 
-      return;
-    }
+    return;
 
   struct thread *receiving_thread = donating_thread->blocking_lock->holder;
   struct list_elem *e;
   bool priority_in_list = false;
-
 
   sema_down (&receiving_thread->priority_sema);
 
@@ -560,8 +548,8 @@ thread_donate_priority (struct thread *donating_thread)
   
   if (!priority_in_list)
     {
-      struct donated_priority *donation = malloc 
-          (sizeof (struct donated_priority));
+      struct donated_priority *donation =
+          malloc (sizeof (struct donated_priority));
       donation->priority = donating_thread->priority;
       donation->blocking_lock = donating_thread->blocking_lock;
       list_insert_ordered (&receiving_thread->donated_priorities,
@@ -617,7 +605,7 @@ thread_calculate_priority (struct thread *t)
   priority = FP_SUBTRACT(priority, FP_DIVIDE_INT(t->recent_cpu, 4));
   /* Priority -= nice * 2 */
   priority = FP_SUBTRACT(priority, 
-      FP_MULTIPLY_INT(FP_TO_FIXED_POINT(t->nice), 2));
+                         FP_MULTIPLY_INT(FP_TO_FIXED_POINT(t->nice), 2));
   /* Return priority rounded down to the nearest integer. */
   return FP_TO_INT_TRUNCATE(priority);
 }
@@ -666,9 +654,7 @@ thread_recalculate_load_avg (void)
   int ready_threads = ready_count;
   /* Increment ready_threads by 1 to account for the current thread. */
   if (thread_current () != idle_thread)
-  {
     ready_threads++;
-  }
   /* Convert ready_threads to fixed_point arithmetic. */
   ready_threads = FP_TO_FIXED_POINT(ready_threads);
   /* Ready_threads /= 60 */
@@ -943,7 +929,7 @@ is_highest_priority (void)
     return true;
   
   struct thread *first =
-    list_entry (list_front (&ready_list), struct thread, elem);
+      list_entry (list_front (&ready_list), struct thread, elem);
   return (thread_current ()->priority == first->priority);
 }
 
