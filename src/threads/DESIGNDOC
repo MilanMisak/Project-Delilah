@@ -397,7 +397,25 @@ of load_avg and nice.
 >> time to work on this part of the task, how might you choose to
 >> refine or improve your design?
 
-//TODO: -.-
+The design is quite simple and easy to understand as it is now. The most
+changes are in thread_tick (well some auxiliary functions are called from
+there) and a few other functions were modified a little. Otherwise completely
+new functions were added and a lot of the already existing infrastructure
+for the basic scheduler is reused.
+
+A little disadvantage could be the occasional presence of if statements
+checking for the mlfqs flag which indicates whether the basic or advanced
+scheduler is used.
+
+With extra time and some refactoring the code in thread.c could be modified
+so that there are a few static function pointers initialised at the start
+depending on which scheduler is used. Then functions represented by these
+function pointers could be called without the knowledge of the active
+scheduler. The two schedulers could be factored out into separate files
+while still referencing some code they have in common. It would be something
+like a base abstract class and two subclasses in OOP. The usefulness of
+such a solution would be bigger though especially if there was more
+scheduler-specific code.
 
 
 >> C6: The assignment explains arithmetic for fixed-point mathematics in

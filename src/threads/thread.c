@@ -476,11 +476,11 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  ASSERT (PRI_MIN <= new_priority && new_priority <= PRI_MAX);
-
   /* The call should be ignored with when BSD scheduler is running. */
   if (thread_mlfqs)
     return;
+
+  ASSERT (PRI_MIN <= new_priority && new_priority <= PRI_MAX);
 
   struct thread *cur = thread_current ();
   cur->self_set_priority = new_priority;
@@ -492,7 +492,6 @@ thread_set_priority (int new_priority)
 void
 thread_choose_priority (struct thread *t)
 {
-
   t->priority = t->self_set_priority;
 
   sema_down (&t->priority_sema);
@@ -560,8 +559,6 @@ thread_donate_priority (struct thread *donating_thread, int level)
                            &has_higher_priority_donation, NULL);
       sema_up (&receiving_thread->priority_sema);
     }
-
-
 
   thread_choose_priority(receiving_thread);
   thread_donate_priority(receiving_thread, ++level);
