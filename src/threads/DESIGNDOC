@@ -59,10 +59,11 @@ that it will also implement the BSD scheduler correctly.
 >> A3: What steps are taken to minimize the amount of time spent in
 >> the timer interrupt handler?
 
-Rather than check the sleeping threads on every tick, to see if they should be
-woken up, we only check them when schedule() is called. (The only change made
-to the calling of the interrupt handler is the implementation of the BSD
-scheduler).
+Since the spec calls for a sleep function which 'need not wake up [the thread]
+after exactly x ticks', we decided that rather than check the sleeping threads
+on every tick, to see if they should be woken up, we only check them when
+schedule() is called. (The only change made to the calling of the interrupt
+handler is the implementation of the BSD scheduler).
 
 
 ---- SYNCHRONIZATION ----
@@ -70,19 +71,21 @@ scheduler).
 >> A4: How are race conditions avoided when multiple threads call
 >> timer_sleep() simultaneously?
 
-//TODO: this question
-There are no race conditions when timer_sleep() is called, because
-thread_sleep() makes sure the only the current thread is calling it?
-IUNNOLOL :D
+When multiple threads call timer_sleep() at the same time, there is a
+possiblility that they will both insert themselves into the same place in the
+list of seeping threads. This could cause them to overwrite each other, or the
+ordering of the list. It is easily avoided by locking the shared resource (the
+list of sleepng threads) with a semaphore.
 
 
 >> A5: How are race conditions avoided when a timer interrupt occurs
 >> during a call to timer_sleep()?
 
-//TODO: also this question
-They... aren't? I mean, it looks to me as though the number of ticks 'til the
-thread wakes up could go either way (that is, if the interrupt occurs before
-or after the call to thread_sleep()).
+Had we woken threads up in timer_ticks(), rather than in schedule(), the list
+of sleeping threads could encounter the same problems as if two calls to
+timer_sleep() were trying to access it simultaneously (the previous question).
+However, we have avoided this by simply not touching the list of sleeping
+threads in the timer interrupt handler.
 
 
 ---- RATIONALE ----
@@ -313,6 +316,7 @@ to priority_donations (priority_sema). This is because the lock would have
 had to be released indirectly from lock_release(), resulting in an infinite 
 loop.
 
+
               ADVANCED SCHEDULER
               ==================
 
@@ -328,12 +332,12 @@ Added to struct thread:
     int recent_cpu;                    /* Measure of how much CPU time
                                           a thread has received recently. */
 
-
 Added to thread.c:
 
     static int ready_count;     /* Number of processes on the ready list. */
     static int load_avg;        /* System load average. In fixed-point
                                    arithmetic. */
+
 
 ---- ALGORITHMS ----
 
