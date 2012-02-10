@@ -36,6 +36,8 @@ Added to struct thread:
     struct list_elem sleepelem;        /* List element for sleeping list. */
     struct semaphore sleepsema;        /* Semaphore to make a thread sleep
                                           and wake it up. */
+    struct semaphore priority_sema;    /* Semaphore to control access to 
+                                          donated priorities */
 
 
 ---- ALGORITHMS ----
@@ -294,6 +296,10 @@ decided that the priority of a thread was going to be required to be
 calculated too often with this method, and it would be better to call a
 method to set the field, which became thread_choose_priority().
 
+Additionally, a semaphore had to be used instead of a lock to control access
+to priority_donations (priority_sema). This is because the lock would have 
+had to be released indirectly from lock_release(), resulting in an infinite 
+loop.
 
               ADVANCED SCHEDULER
               ==================

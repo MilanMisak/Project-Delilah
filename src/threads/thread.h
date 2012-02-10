@@ -102,8 +102,8 @@ struct thread
     struct lock *blocking_lock;         /* Lock causing the thread to block. */
     struct list donated_priorities;     /* List of locks and donated priorities
                                            for them. */
-    struct semaphore priority_lock;     /* Lock to control access to donated
-                                           priorities */
+    struct semaphore priority_sema;     /* Semaphore to control access to 
+                                           donated priorities */
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */

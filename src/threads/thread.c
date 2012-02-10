@@ -494,7 +494,7 @@ thread_choose_priority (struct thread *t)
 
   t->priority = t->self_set_priority;
 
-  sema_down (&t->priority_lock);
+  sema_down (&t->priority_sema);
   if (!list_empty (&t->donated_priorities))
   {
 
@@ -508,7 +508,7 @@ thread_choose_priority (struct thread *t)
     }
 
   }
-  sema_up (&t->priority_lock);
+  sema_up (&t->priority_sema);
 }
 
 /* TODO - Teach Jack to write todos. */
@@ -525,7 +525,7 @@ thread_donate_priority (struct thread *donating_thread, int level)
   bool priority_in_list = false;
 
 
-  sema_down (&receiving_thread->priority_lock);
+  sema_down (&receiving_thread->priority_sema);
 
   for (e = list_begin (&receiving_thread->donated_priorities);
        e != list_end (&receiving_thread->donated_priorities);
@@ -540,10 +540,10 @@ thread_donate_priority (struct thread *donating_thread, int level)
           if (donating_thread->priority > d->priority)
             {
               d->priority = donating_thread->priority;
-              sema_up (&receiving_thread->priority_lock);
+              sema_up (&receiving_thread->priority_sema);
               break; 
             }
-          sema_up (&receiving_thread->priority_lock);
+          sema_up (&receiving_thread->priority_sema);
           return;       
         }             
     }
@@ -557,7 +557,7 @@ thread_donate_priority (struct thread *donating_thread, int level)
       list_insert_ordered (&receiving_thread->donated_priorities,
                            &donation->priority_elem,
                            &has_higher_priority_donation, NULL);
-      sema_up (&receiving_thread->priority_lock);
+      sema_up (&receiving_thread->priority_sema);
     }
 
 
@@ -581,9 +581,9 @@ thread_remove_priority (struct thread *t, struct lock *l)
       
       if (d->blocking_lock == l)
         {
-          sema_down (&t->priority_lock);
+          sema_down (&t->priority_sema);
           list_remove (e);
-          sema_up (&t->priority_lock);
+          sema_up (&t->priority_sema);
           free (d);
           return;
         }
@@ -796,7 +796,7 @@ init_thread (struct thread *t, const char *name, int priority,
  
   sema_init (&t->sleep_sema, 0);
   list_init (&t->donated_priorities);
-  sema_init (&t->priority_lock, 1);
+  sema_init (&t->priority_sema, 1);
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
