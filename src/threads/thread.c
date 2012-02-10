@@ -456,6 +456,14 @@ thread_yield (void)
   intr_set_level (old_level);
 }
 
+/* Forces the current thread to yield if it no longer has highest priority */
+void
+yield_if_necessary (void)
+{
+  if (!wake_up_running && !is_highest_priority ())
+    thread_yield ();
+}
+
 /* Invoke function 'func' on all threads, passing along 'aux'.
    This function must be called with interrupts off. */
 void
@@ -477,11 +485,11 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  ASSERT (PRI_MIN <= new_priority && new_priority <= PRI_MAX);
-
   /* The call should be ignored with when BSD scheduler is running. */
   if (thread_mlfqs)
     return;
+
+  ASSERT (PRI_MIN <= new_priority && new_priority <= PRI_MAX);
 
   struct thread *cur = thread_current ();
   cur->self_set_priority = new_priority;
@@ -493,7 +501,6 @@ thread_set_priority (int new_priority)
 void
 thread_choose_priority (struct thread *t)
 {
-
   t->priority = t->self_set_priority;
 
   sema_down (&t->priority_sema);
@@ -561,8 +568,6 @@ thread_donate_priority (struct thread *donating_thread, int level)
                            &has_higher_priority_donation, NULL);
       sema_up (&receiving_thread->priority_sema);
     }
-
-
 
   thread_choose_priority(receiving_thread);
   thread_donate_priority(receiving_thread, ++level);
@@ -927,15 +932,6 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
-
-//TODO - y no close to thread_yield()?
-/* Forces the current thread to yield if it no longer has highest priority */
-void
-yield_if_necessary (void)
-{
-  if (!wake_up_running && !is_highest_priority ())
-    thread_yield ();
-}
 
 /* Determines whether or not the running thread has the highest priority. */
 bool
