@@ -9,7 +9,7 @@
 >> Fill in the names and email addresses of your group members.
 
 Milan Misak <mm5510@imperial.ac.uk>
-Jack Bracewell <jb910@doc.ic.ac.uk>
+Jack Bracewell <jb2910@doc.ic.ac.uk>
 Craig Ellis <ce710@doc.ic.ac.uk>
 
 ---- PRELIMINARIES ----
@@ -105,7 +105,7 @@ Added to struct thread:
 
     int self_set_priority;             /* Priority that has not been set
                                           via donation. */
-    struct lock *blockinglock;         /* Lock causing the thread to block. */
+    struct lock *blocking_lock;        /* Lock causing the thread to block. */
     struct list donated_priorities;    /* List of locks and donated priorities
                                           for them. */
 
@@ -311,6 +311,12 @@ Added to struct thread:
                                           a thread has received recently. */
 
 
+Added to thread.c:
+
+    static int ready_count;     /* Number of processes on the ready list. */
+    static int load_avg;        /* System load average. In fixed-point
+                                   arithmetic. */
+
 ---- ALGORITHMS ----
 
 >> C2: Suppose threads A, B, and C have nice values 0, 1, and 2.  Each
@@ -318,21 +324,19 @@ Added to struct thread:
 >> scheduling decision and the priority and recent_cpu values for each
 >> thread after each given number of timer ticks:
 
-//TODO: and now it's milan's turn :D
-
-timer  recent_cpu    priority   thread
-ticks   A   B   C   A   B   C   to run
------  --  --  --  --  --  --   ------
- 0
- 4
- 8
-12
-16
-20
-24
-28
-32
-36
+timer         recent_cpu         priority   thread
+ticks     A       B       C     A   B   C   to run
+-----   -----   -----   -----  --  --  --   ------
+ 0      0.091   1.091   2.091  63  61  59      A
+ 4      0.091   1.091   2.091  62  60  58      A
+ 8      0.091   1.091   2.091  62  60  58      A
+12      0.091   1.091   2.091  62  60  58      A
+16      0.091   1.091   2.091  62  60  58      A
+20      0.091   1.091   2.091  62  60  58      A
+24      0.091   1.091   2.091  62  60  58      A
+28      0.091   1.091   2.091  62  60  58      A
+32      0.091   1.091   2.091  62  60  58      A
+36      0.091   1.091   2.091  62  60  58      A
 
 
 >> C3: Did any ambiguities in the scheduler specification make values
