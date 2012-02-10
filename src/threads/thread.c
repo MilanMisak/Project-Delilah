@@ -906,7 +906,6 @@ schedule (void)
   if (cur != next)
     prev = switch_threads (cur, next);
   thread_schedule_tail (prev);
-  
 }
 
 /* Returns a tid to use for a new thread. */
@@ -928,7 +927,8 @@ allocate_tid (void)
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
-/* Forces the current thrad to yield if it no longer has highest priority */
+//TODO - y no close to thread_yield()?
+/* Forces the current thread to yield if it no longer has highest priority */
 void
 yield_if_necessary (void)
 {

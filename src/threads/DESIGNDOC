@@ -361,13 +361,33 @@ ticks     A       B       C     A   B   C   to run
 >> in the table uncertain?  If so, what rule did you use to resolve
 >> them?  Does this match the behaviour of your scheduler?
 
-//TODO: because i haven't a clue about this part
+The specification does not mention the order in which load_avg and threads'
+recent_cpu and priority values should be calculated. Also, load_avg
+and recent_cpu are real numbers but their precision is not given
+
+We resolved the first issue based on the dependence of these variables so
+that changes propagate quickly from a source variable to a dependent variable.
+First, we increment current thread's recent_cpu. Then we calculate load_avg
+as it depends only on the number of ready threads and itself. After this
+we calculate the new recent_cpu (it depends on load_avg) and the new priority
+(depends on recent_cpu). Obviously not all of these calculations are made
+with each timer tick as given by the specification. But this is the order
+in which they happen.
+
+For the real numbers we implemented a fixed-point arithmetic with 14
+fractional bits. This allows for fairly reasonably accurate representation
+of real numbers and while still being able to contain really big numbers.
+There is no need for these (big numbers) anyway as load_avg uses only
+the number of ready threads for its calculation (which should not exceed
+a few thousands in the worst case for something like PintOS). Also,
+recent_cpu's value stays quite small thanks to relatively small value
+of load_avg and nice.
 
 
 >> C4: How is the way you divided the cost of scheduling between code
 >> inside and outside interrupt context likely to affect performance?
 
-//TODO: yep, milan again
+//TODO: I don't bloody know. Will be slow? 
 
 
 ---- RATIONALE ----
@@ -377,7 +397,7 @@ ticks     A       B       C     A   B   C   to run
 >> time to work on this part of the task, how might you choose to
 >> refine or improve your design?
 
-//TODO: and again
+//TODO: -.-
 
 
 >> C6: The assignment explains arithmetic for fixed-point mathematics in
@@ -387,7 +407,13 @@ ticks     A       B       C     A   B   C   to run
 >> data type and/or a set of functions or macros to manipulate
 >> fixed-point numbers, why did you do so?  If not, why not?
 
-//TODO: last one :)
+Fixed-point arithmetic was implemented as a set of macros. It is not
+used in too many places and since all that is required are just simple
+calculations it is sufficient to just have the preprocessor replace
+the macro uses with mathematical expressions.
+
+Using functions is not needed here at all. It could improve code readability
+a little but it would introduce unnecessary costly function calls.
 
 
                SURVEY QUESTIONS
