@@ -348,7 +348,8 @@ thread_wake_up (void)
 {
   int ticks = timer_ticks();
 
-  sema_down (&sleep_sema);
+  if(!sema_try_down (&sleep_sema))
+    return;
   
   struct list_elem *e;
   for (e = list_begin (&sleeping_list); e != list_end (&sleeping_list);
