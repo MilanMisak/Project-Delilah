@@ -9,7 +9,7 @@
 >> Fill in the names and email addresses of your group members.
 
 Milan Misak <mm5510@imperial.ac.uk>
-Jack Bracewell <jb910@doc.ic.ac.uk>
+Jack Bracewell <jb2910@doc.ic.ac.uk>
 Craig Ellis <ce710@doc.ic.ac.uk>
 
 ---- PRELIMINARIES ----
@@ -49,6 +49,7 @@ All that timer_sleep() does is make sure that interrupts are enabled, then
 call thread_sleep(). The value passed to thread_sleep() specifies on (or
 after) which tick the timer can be woken up. (The given value will be checked
 before schedule() chooses another thread to run).
+
 Similarly, the timer interrupt handler simply increments 'ticks', then calls
 thread_tick(). This will ncrement the appropriate one of 'idle_ticks',
 'user_ticks', or 'kernel_ticks', as before. The only change we have made is
@@ -107,7 +108,7 @@ Added to struct thread:
 
     int self_set_priority;             /* Priority that has not been set
                                           via donation. */
-    struct lock *blockinglock;         /* Lock causing the thread to block. */
+    struct lock *blocking_lock;        /* Lock causing the thread to block. */
     struct list donated_priorities;    /* List of locks and donated priorities
                                           for them. */
 
@@ -143,7 +144,6 @@ it then can see which thread it needs to donate to by the holder field in
 the lock struct. When the receiving thread gets this new priority, it can
 apply the same principles to track down the thread it needs to pass on the
 donation to if need be.
-
 
                                         +==============================+
                                         |           thread 1           |
@@ -197,7 +197,6 @@ donation to if need be.
 
 
 
-
 ---- ALGORITHMS ----
 
 >> B3: How do you ensure that the highest priority thread waiting for
@@ -246,6 +245,7 @@ the function exits.
 Finally, sema_down() is called and the thread waits for the lock to be
 released.
 
+
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.
 
@@ -263,10 +263,22 @@ sema_up() is finally called to release the lock.
 >> how your implementation avoids it.  Can you use a lock to avoid
 >> this race?
 
-//TODO: yeah, I still have no idea about these race conditions
+It is possible that, implemented differently, there would be a race condition
+between a thread setting its own priority, and another thread trying to set
+the same priority (eg. through priority donation). In this case, one of the
+values could be overwritten before it is stored.
+
+Our implementation avoids this by having the two variables stored seperately.
+That is, when another thread tries to donate priority, this is stored in an
+ordered list, and only then is it used to 'thread_choose_priority()'. However,
+when a thread sets its own priority, this is stored in a seperate variable,
+self_set_priority. This ensures that the two never interfere.
+
+A lock could have been used, but would still require extra work in order to
+store a thread's donated priorities.
 
 
----- RATIONALE ----
+---RATIONALE ----
 
 >> B7: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
@@ -317,6 +329,12 @@ Added to struct thread:
                                           a thread has received recently. */
 
 
+Added to thread.c:
+
+    static int ready_count;     /* Number of processes on the ready list. */
+    static int load_avg;        /* System load average. In fixed-point
+                                   arithmetic. */
+
 ---- ALGORITHMS ----
 
 >> C2: Suppose threads A, B, and C have nice values 0, 1, and 2.  Each
@@ -324,21 +342,19 @@ Added to struct thread:
 >> scheduling decision and the priority and recent_cpu values for each
 >> thread after each given number of timer ticks:
 
-//TODO: and now it's milan's turn :D
-
-timer  recent_cpu    priority   thread
-ticks   A   B   C   A   B   C   to run
------  --  --  --  --  --  --   ------
- 0
- 4
- 8
-12
-16
-20
-24
-28
-32
-36
+timer         recent_cpu         priority   thread
+ticks     A       B       C     A   B   C   to run
+-----   -----   -----   -----  --  --  --   ------
+ 0      0.091   1.091   2.091  63  61  59      A
+ 4      0.091   1.091   2.091  62  60  58      A
+ 8      0.091   1.091   2.091  62  60  58      A
+12      0.091   1.091   2.091  62  60  58      A
+16      0.091   1.091   2.091  62  60  58      A
+20      0.091   1.091   2.091  62  60  58      A
+24      0.091   1.091   2.091  62  60  58      A
+28      0.091   1.091   2.091  62  60  58      A
+32      0.091   1.091   2.091  62  60  58      A
+36      0.091   1.091   2.091  62  60  58      A
 
 
 >> C3: Did any ambiguities in the scheduler specification make values

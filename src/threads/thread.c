@@ -67,7 +67,8 @@ static long long user_ticks;    /* # of timer ticks in user programs. */
 /* Scheduling. */
 #define TIME_SLICE 4            /* # of timer ticks to give each thread. */
 static unsigned thread_ticks;   /* # of timer ticks since last yield. */
-static int load_avg;            /* System load average. In fixed-point arit. */
+static int load_avg;            /* System load average. In fixed-point
+                                   arithmetic. */
 
 /* True only when thread_wake_up is running. */
 static bool wake_up_running;
@@ -177,10 +178,6 @@ thread_tick (void)
   {
     int ticks = timer_ticks ();
 
-    /* Recalculate priorities of all the threads every fourth clock tick. */
-    if (ticks % 4 == 0)
-      thread_foreach (&thread_recalculate_priority, NULL);
-
     /* Increment recent_cpu of the current thread unless it is idle. */
     if (t != idle_thread)
     {
@@ -194,6 +191,10 @@ thread_tick (void)
       thread_recalculate_load_avg ();
       thread_foreach (&thread_recalculate_recent_cpu, NULL);
     }
+    
+    /* Recalculate priorities of all the threads every fourth clock tick. */
+    if (ticks % 4 == 0)
+      thread_foreach (&thread_recalculate_priority, NULL);
   }
 
   /* Enforce preemption. */
