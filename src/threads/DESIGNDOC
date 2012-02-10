@@ -47,6 +47,7 @@ All that timer_sleep() does is make sure that interrupts are enabled, then
 call thread_sleep(). The value passed to thread_sleep() specifies on (or
 after) which tick the timer can be woken up. (The given value will be checked
 before schedule() chooses another thread to run).
+
 Similarly, the timer interrupt handler simply increments 'ticks', then calls
 thread_tick(). This will ncrement the appropriate one of 'idle_ticks',
 'user_ticks', or 'kernel_ticks', as before. The only change we have made is
@@ -142,7 +143,6 @@ the lock struct. When the receiving thread gets this new priority, it can
 apply the same principles to track down the thread it needs to pass on the
 donation to if need be.
 
-
                                         +==============================+
                                         |           thread 1           |
                                         +------------------------------+
@@ -195,7 +195,6 @@ donation to if need be.
 
 
 
-
 ---- ALGORITHMS ----
 
 >> B3: How do you ensure that the highest priority thread waiting for
@@ -244,6 +243,7 @@ the function exits.
 Finally, sema_down() is called and the thread waits for the lock to be
 released.
 
+
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.
 
@@ -261,10 +261,22 @@ sema_up() is finally called to release the lock.
 >> how your implementation avoids it.  Can you use a lock to avoid
 >> this race?
 
-//TODO: yeah, I still have no idea about these race conditions
+It is possible that, implemented differently, there would be a race condition
+between a thread setting its own priority, and another thread trying to set
+the same priority (eg. through priority donation). In this case, one of the
+values could be overwritten before it is stored.
+
+Our implementation avoids this by having the two variables stored seperately.
+That is, when another thread tries to donate priority, this is stored in an
+ordered list, and only then is it used to 'thread_choose_priority()'. However,
+when a thread sets its own priority, this is stored in a seperate variable,
+self_set_priority. This ensures that the two never interfere.
+
+A lock could have been used, but would still require extra work in order to
+store a thread's donated priorities.
 
 
----- RATIONALE ----
+---RATIONALE ----
 
 >> B7: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
