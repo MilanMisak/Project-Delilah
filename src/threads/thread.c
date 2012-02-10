@@ -455,6 +455,14 @@ thread_yield (void)
   intr_set_level (old_level);
 }
 
+/* Forces the current thread to yield if it no longer has highest priority */
+void
+yield_if_necessary (void)
+{
+  if (!wake_up_running && !is_highest_priority ())
+    thread_yield ();
+}
+
 /* Invoke function 'func' on all threads, passing along 'aux'.
    This function must be called with interrupts off. */
 void
@@ -923,15 +931,6 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
-
-//TODO - y no close to thread_yield()?
-/* Forces the current thread to yield if it no longer has highest priority */
-void
-yield_if_necessary (void)
-{
-  if (!wake_up_running && !is_highest_priority ())
-    thread_yield ();
-}
 
 /* Determines whether or not the running thread has the highest priority. */
 bool
