@@ -443,7 +443,8 @@ thread_yield (void)
   old_level = intr_disable ();
   if (cur != idle_thread) 
     {
-      list_insert_ordered (&ready_list, &cur->elem, &has_higher_priority, NULL);
+      list_insert_ordered (&ready_list, &cur->elem, &has_higher_priority,
+                           NULL);
       ready_count++;
     }
   cur->status = THREAD_READY;
