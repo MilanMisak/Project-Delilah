@@ -1,6 +1,7 @@
 #include "userprog/syscall.h"
 #include <stdio.h>
 #include <syscall-nr.h>
+#include "devices/shutdown.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 
@@ -12,6 +13,16 @@ static void *get_pointer_argument(int n, void * esp);
 static void h_halt (void *esp, uint32_t *return_value);
 static void h_exit (void *esp, uint32_t *return_value);
 static void h_exec (void *esp, uint32_t *return_value);
+static void h_wait (void *esp, uint32_t *return_value);
+static void h_create (void *esp, uint32_t *return_value);
+static void h_remove (void *esp, uint32_t *return_value);
+static void h_open (void *esp, uint32_t *return_value);
+static void h_filesize (void *esp, uint32_t *return_value);
+static void h_read (void *esp, uint32_t *return_value);
+static void h_write (void *esp, uint32_t *return_value);
+static void h_seek (void *esp, uint32_t *return_value);
+static void h_tell (void *esp, uint32_t *return_value);
+static void h_close (void *esp, uint32_t *return_value);
 
 /* System call handlers array. */
 typedef void (*handler) (void *esp, uint32_t *return_value);
@@ -62,8 +73,7 @@ static void
 static void
 h_halt (void *esp, uint32_t *return_value)
 {
-  //TODO - halt SC
-  thread_exit ();
+  shutdown_power_off ();
 }
 
 /* The exit system call handler. */
@@ -88,4 +98,74 @@ h_exec (void *esp, uint32_t *return_value)
 
   //TODO - exec SC
   thread_exit ();
+}
+
+/* The wait system call handler. */
+static void
+h_wait (void *esp, uint32_t *return_value)
+{
+  //TODO - wait SC
+}
+
+/* The create system call. */
+static void
+h_create (void *esp, uint32_t *return_value)
+{
+  //TODO - create SC
+}
+
+/* The remove system call. */
+static void
+h_remove (void *esp, uint32_t *return_value)
+{
+  //TODO - remove SC
+}
+
+/* The open system call. */
+static void
+h_open (void *esp, uint32_t *return_value)
+{
+  //TODO - open SC
+}
+
+/* The filesize system call. */
+static void
+h_filesize (void *esp, uint32_t *return_value)
+{
+  //TODO - filesize SC
+}
+
+/* The read system call. */
+static void
+h_read (void *esp, uint32_t *return_value)
+{
+  //TODO - read SC
+}
+
+/* The write system call. */
+static void
+h_write (void *esp, uint32_t *return_value)
+{
+  //TODO - write SC
+}
+
+/* The seek system call. */
+static void
+h_seek (void *esp, uint32_t *return_value)
+{
+  //TODO - seek SC
+}
+
+/* The tell system call. */
+static void
+h_tell (void *esp, uint32_t *return_value)
+{
+  //TODO - tell SC
+}
+
+/* The close system call. */
+static void
+h_close (void *esp, uint32_t *return_value)
+{
+  //TODO - close SC
 }
