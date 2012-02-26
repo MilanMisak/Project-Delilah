@@ -7,22 +7,22 @@
 
 static void syscall_handler (struct intr_frame *);
 
-static int get_integer_argument(int n, void *esp);
-static void *get_pointer_argument(int n, void * esp);
+static void *get_argument(int n, void *esp);
+static uint32_t get_integer_argument(int n, void *esp);
 
-static void h_halt (void *esp, uint32_t *return_value);
-static void h_exit (void *esp, uint32_t *return_value);
-static void h_exec (void *esp, uint32_t *return_value);
-static void h_wait (void *esp, uint32_t *return_value);
-static void h_create (void *esp, uint32_t *return_value);
-static void h_remove (void *esp, uint32_t *return_value);
-static void h_open (void *esp, uint32_t *return_value);
+static void h_halt     (void *esp, uint32_t *return_value);
+static void h_exit     (void *esp, uint32_t *return_value);
+static void h_exec     (void *esp, uint32_t *return_value);
+static void h_wait     (void *esp, uint32_t *return_value);
+static void h_create   (void *esp, uint32_t *return_value);
+static void h_remove   (void *esp, uint32_t *return_value);
+static void h_open     (void *esp, uint32_t *return_value);
 static void h_filesize (void *esp, uint32_t *return_value);
-static void h_read (void *esp, uint32_t *return_value);
-static void h_write (void *esp, uint32_t *return_value);
-static void h_seek (void *esp, uint32_t *return_value);
-static void h_tell (void *esp, uint32_t *return_value);
-static void h_close (void *esp, uint32_t *return_value);
+static void h_read     (void *esp, uint32_t *return_value);
+static void h_write    (void *esp, uint32_t *return_value);
+static void h_seek     (void *esp, uint32_t *return_value);
+static void h_tell     (void *esp, uint32_t *return_value);
+static void h_close    (void *esp, uint32_t *return_value);
 
 /* System call handlers array. */
 typedef void (*handler) (void *esp, uint32_t *return_value);
@@ -37,36 +37,33 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f) 
 {
-  printf ("system call!\n");
-
   /* Get ESP and EAX from the interrupt frame. */
   void *esp = f->esp;
   uint32_t *eax = &(f->eax);
   
   /* Get the system call number from the stack. */
-  int syscall_number;
-  asm ("movl %1, %0" : "=m" (syscall_number) : "r" (esp));
+  //TODO - need to check that ESP is valid before dereferencing
+  uint32_t syscall_number = *((uint32_t *) esp);
 
   /* Call the system call handler. */
   (*handlers[syscall_number]) (esp, eax);
 }
 
-static int
-get_integer_argument(int n, void *esp)
+/* Returns Nth argument (1-based) to the syscall handler from the stack. */
+static void
+*get_argument (int n, void *esp)
 {
-  int arg;
-  //TODO - remove or make work using memory syntax
-  //asm ("movl %1(%2), %0" : "=r" (arg) : "i" (n), "r" (e));
-  asm ("movl %1, %0" : "=r" (arg) : "r" (esp + 4 * n));
+  void *arg = esp + 4 * n;
+  // TODO - need to check that the pointer is valid and safe
   return arg;
 }
 
-static void
-*get_pointer_argument(int n, void *esp)
+/* Returns Nth argument to the syscall handler and casts it to integer. */
+static uint32_t
+get_integer_argument (int n, void *esp)
 {
-  void *arg;
-  asm ("movl %1, %0" : "=r" (arg) : "r" (esp + 4 * n));
-  return arg;
+  void *arg = get_argument (n, esp);
+  return *((uint32_t *) arg);
 }
 
 /* The halt system call handler. */
@@ -81,11 +78,9 @@ static void
 h_exit (void *esp, uint32_t *return_value)
 {
   int status = get_integer_argument (1, esp);
+  *return_value = status;
 
-  /* Set EAX to status. */
-  asm ("movl %0, %%eax" : : "a" (status));
-
-  //TODO - do we need to free stuff?
+  //TODO - do we need to free stuff? like release locks and such
 
   thread_exit ();
 }
@@ -94,8 +89,6 @@ h_exit (void *esp, uint32_t *return_value)
 static void
 h_exec (void *esp, uint32_t *return_value)
 {
-  char *cmd_line = get_pointer_argument (1, esp);
-
   //TODO - exec SC
   thread_exit ();
 }
