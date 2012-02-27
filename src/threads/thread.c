@@ -784,6 +784,7 @@ init_thread (struct thread *t, const char *name, int priority,
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->self_set_priority = priority;
+
   /* Recent_cpu and nice used only by BSD scheduler but they can be here.
      They will be initialised and kept at 0. */
   t->recent_cpu = recent_cpu;
@@ -793,6 +794,8 @@ init_thread (struct thread *t, const char *name, int priority,
   sema_init (&t->sleep_sema, 0);
   list_init (&t->donated_priorities);
   sema_init (&t->priority_sema, 1);
+
+  list_init (&t->open_files);
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);

@@ -105,6 +105,8 @@ struct thread
     struct semaphore priority_sema;     /* Semaphore to control access to 
                                            donated priorities */
 
+    struct list open_files;             /* List of open files by this process. */
+
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 

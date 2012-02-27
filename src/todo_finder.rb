@@ -1,4 +1,4 @@
-DIRS = ["devices", "lib", "threads", "userprog"]
+DIRS = ["devices", "filesys", "lib", "threads", "userprog"]
 IGNORED_DIRS = [/\./, /\.\./, /build/]
 FILE_PATTERNS = [/\.c$/, /\.h$/, /^DESIGNDOC$/]
 

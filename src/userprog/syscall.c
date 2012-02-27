@@ -29,8 +29,8 @@ static void h_close    (void *esp, uint32_t *return_value);
 /* System call handlers array. */
 typedef void (*handler) (void *esp, uint32_t *return_value);
 static handler (handlers[13]) = {&h_halt, &h_exit, &h_exec, &h_wait, &h_create,
-                                &h_remove, &h_open, &h_filesize, &h_read,
-                                &h_write, &h_seek, &h_tell, &h_close};
+                                 &h_remove, &h_open, &h_filesize, &h_read,
+                                 &h_write, &h_seek, &h_tell, &h_close};
 
 void
 syscall_init (void) 
@@ -167,7 +167,10 @@ h_open (void *esp, uint32_t *return_value)
   }
   else
   {
+
     //TODO - store the struct file somewhere?
+    
+    
     *return_value = 5; //TODO - an actual fd needed here
   }
 }
