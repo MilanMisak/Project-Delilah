@@ -9,7 +9,7 @@
 
 static void syscall_handler (struct intr_frame *);
 
-static void *get_argument(int n, void *esp);
+static int *get_argument(int n, void *esp);
 static uint32_t get_integer_argument(int n, void *esp);
 
 static void h_halt     (void *esp, uint32_t *return_value);
@@ -58,10 +58,10 @@ syscall_handler (struct intr_frame *f)
 }
 
 /* Returns Nth argument (1-based) to the syscall handler from the stack. */
-static void
+static int
 *get_argument (int n, void *esp)
 {
-  void *arg = esp + n;
+  int *arg = (int *) esp + n;
   // TODO - need to check that the pointer is valid and safe
   return arg;
 }
@@ -108,8 +108,7 @@ h_halt (void *esp, uint32_t *return_value)
 static void
 h_exit (void *esp, uint32_t *return_value)
 {
-  printf("Halt FFS");
-  int status = get_integer_argument (1, esp);
+  int status = *get_argument (1, esp);
   *return_value = status;
 
   //TODO - do we need to free stuff? like release locks and such
@@ -139,7 +138,7 @@ h_create (void *esp, uint32_t *return_value)
   /* Get FILE and INITIAL_SIZE from the stack. */
   char *file = (char *) get_argument (1, esp);
   //TODO - check file is safe
-  uint32_t initial_size = get_integer_argument (2, esp);
+  int initial_size = *get_argument (2, esp);
 
   /* Return TRUE if file gets created, FALSE otherwise. */
   *return_value = filesys_create (file, initial_size);
@@ -199,9 +198,12 @@ static void
 h_write (void *esp, uint32_t *return_value)
 {
   /* Get FD, BUFFER and SIZE from the stack. */
-  uint32_t fd = get_integer_argument (1, esp);
+  int fd = *get_argument (1, esp);
   char *buffer = (char *) get_argument (2, esp);
-  uint32_t size = get_integer_argument (3, esp);
+  int size = *get_argument (3, esp);
+
+  printf("FD: %i %i: \n", fd, size);
+  printf(buffer);
 
   //TODO - check for safe memory of buffer
 
@@ -213,7 +215,10 @@ h_write (void *esp, uint32_t *return_value)
   {
     //TODO - break up larger buffers?
     lock_acquire (&filesys_lock);
-    putbuf (buffer, size);
+    /*putbuf (&("BOOM\n"), 5);
+    char *a = "" + size;
+    putbuf (&a, 1);*/
+    //putbuf (buffer, size);
     lock_release (&filesys_lock);
 
     *return_value = size;
@@ -221,6 +226,9 @@ h_write (void *esp, uint32_t *return_value)
   else
   {
     //TODO - writing to files
+    putbuf (&("BALLS"), 5);
+    //char *a = "" + fd;
+    //putbuf (&a, 1);
   }
 }
 
