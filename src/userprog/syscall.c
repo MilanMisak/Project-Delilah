@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <syscall-nr.h>
 #include "devices/shutdown.h"
+#include "lib/kernel/console.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 
@@ -140,6 +141,29 @@ static void
 h_write (void *esp, uint32_t *return_value)
 {
   //TODO - write SC
+
+  /* Get FD, BUFFER and SIZE from the stack. */
+  uint32_t fd = get_integer_argument (esp, 1);
+  char *buffer = (char *) get_argument (esp, 2);
+  uint32_t size = get_integer_argument (esp, 3);
+
+  //TODO - check for safe memory of buffer
+
+  if (fd == STDIN_FILENO)
+  {
+    //TODO - error - reading from stdin
+  }
+  else if (fd == STDOUT_FILENO)
+  {
+    //TODO - break up larger buffers
+    putbuf (buffer, size);
+
+    *return_value = size;
+  }
+  else
+  {
+    //TODO - writing to files
+  }
 }
 
 /* The seek system call. */
