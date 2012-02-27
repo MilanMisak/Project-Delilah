@@ -1,5 +1,4 @@
 #include "userprog/syscall.h"
-#include "userprog/pagedir.h"
 #include <stdio.h>
 #include <syscall-nr.h>
 #include "devices/shutdown.h"
@@ -7,7 +6,6 @@
 #include "lib/kernel/console.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
-#include "threads/vaddr.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -34,9 +32,13 @@ static handler (handlers[13]) = {&h_halt, &h_exit, &h_exec, &h_wait, &h_create,
                                  &h_remove, &h_open, &h_filesize, &h_read,
                                  &h_write, &h_seek, &h_tell, &h_close};
 
+static struct lock filesys_lock;
+
 void
 syscall_init (void) 
 {
+  lock_init (&filesys_lock);
+
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
@@ -59,7 +61,7 @@ syscall_handler (struct intr_frame *f)
 static void
 *get_argument (int n, void *esp)
 {
-  void *arg = esp + 4 * n;
+  void *arg = esp + n;
   // TODO - need to check that the pointer is valid and safe
   return arg;
 }
@@ -76,31 +78,24 @@ get_integer_argument (int n, void *esp)
   UADDR must be below PHYS_BASE.
   Returns the byte value if successful, -1 if a segfault
   occurred. */
-/* static int
+static int
 get_user (const uint8_t *uaddr) {
   int result;
   asm ("movl $1f, %0; movzbl %1, %0; 1:"
        : "=&a" (result) : "m" (*uaddr));
   return result;
-} */
+}
 
 /* Writes BYTE to user address UDST.
    UDST must be below PHYS_BASE.
    Returns true if successful, false if a segfault occured. */
-/*static bool
+static bool
 put_user (uint8_t *udst, uint8_t byte) {
   int error_code;
   asm ("movl $1f, %0; movb %b2, %1; 1:"
       : "=&a" (error_code), "=m" (*udst) : "q" (byte));
   return error_code != -1;
-}*/
-
-static bool
-pointer_is_mapped (uint8_t *udst) {
-  return (udst != NULL && is_user_vaddr(*udst) &&
-          pagedir_get_page (active_pd (), *udst) != NULL);
 }
-
 
 /* The halt system call handler. */
 static void
@@ -113,6 +108,7 @@ h_halt (void *esp, uint32_t *return_value)
 static void
 h_exit (void *esp, uint32_t *return_value)
 {
+  printf("Halt FFS");
   int status = get_integer_argument (1, esp);
   *return_value = status;
 
@@ -216,7 +212,9 @@ h_write (void *esp, uint32_t *return_value)
   else if (fd == STDOUT_FILENO)
   {
     //TODO - break up larger buffers?
+    lock_acquire (&filesys_lock);
     putbuf (buffer, size);
+    lock_release (&filesys_lock);
 
     *return_value = size;
   }
