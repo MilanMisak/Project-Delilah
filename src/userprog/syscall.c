@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <syscall-nr.h>
 #include "devices/shutdown.h"
+#include "filesys/filesys.h"
+#include "lib/kernel/console.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
@@ -27,7 +29,9 @@ static void h_close    (void *esp, uint32_t *return_value);
 
 /* System call handlers array. */
 typedef void (*handler) (void *esp, uint32_t *return_value);
-static handler (handlers[3]) = {&h_halt, &h_exit, &h_exec};
+static handler (handlers[13]) = {&h_halt, &h_exit, &h_exec, &h_wait, &h_create,
+                                &h_remove, &h_open, &h_filesize, &h_read,
+                                &h_write, &h_seek, &h_tell, &h_close};
 
 void
 syscall_init (void) 
@@ -133,21 +137,45 @@ h_wait (void *esp, uint32_t *return_value)
 static void
 h_create (void *esp, uint32_t *return_value)
 {
-  //TODO - create SC
+  /* Get FILE and INITIAL_SIZE from the stack. */
+  char *file = (char *) get_argument (1, esp);
+  //TODO - check file is safe
+  uint32_t initial_size = get_integer_argument (2, esp);
+
+  /* Return TRUE if file gets created, FALSE otherwise. */
+  *return_value = filesys_create (file, initial_size);
 }
 
 /* The remove system call. */
 static void
 h_remove (void *esp, uint32_t *return_value)
 {
-  //TODO - remove SC
+  /* Get FILE from the stack. */
+  char *file = (char *) get_argument (1, esp);
+  //TODO - check file is safe
+
+  /* Return TRUE if file gets removed, FALSE otherwise. */
+  *return_value = filesys_remove (file);
 }
 
 /* The open system call. */
 static void
 h_open (void *esp, uint32_t *return_value)
 {
-  //TODO - open SC
+  /* Get FILE from the stack. */
+  char *file = (char *) get_argument (1, esp);
+  //TODO - check file is safe
+
+  struct file *opened_file = filesys_open (file);
+  if (opened_file == NULL)
+  {
+    *return_value = -1;
+  }
+  else
+  {
+    //TODO - store the struct file somewhere?
+    *return_value = 5; //TODO - an actual fd needed here
+  }
 }
 
 /* The filesize system call. */
@@ -168,7 +196,28 @@ h_read (void *esp, uint32_t *return_value)
 static void
 h_write (void *esp, uint32_t *return_value)
 {
-  //TODO - write SC
+  /* Get FD, BUFFER and SIZE from the stack. */
+  uint32_t fd = get_integer_argument (1, esp);
+  char *buffer = (char *) get_argument (2, esp);
+  uint32_t size = get_integer_argument (3, esp);
+
+  //TODO - check for safe memory of buffer
+
+  if (fd == STDIN_FILENO)
+  {
+    //TODO - error - reading from stdin
+  }
+  else if (fd == STDOUT_FILENO)
+  {
+    //TODO - break up larger buffers?
+    putbuf (buffer, size);
+
+    *return_value = size;
+  }
+  else
+  {
+    //TODO - writing to files
+  }
 }
 
 /* The seek system call. */
