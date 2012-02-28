@@ -199,11 +199,8 @@ h_write (void *esp, uint32_t *return_value)
 {
   /* Get FD, BUFFER and SIZE from the stack. */
   int fd = *get_argument (1, esp);
-  char *buffer = (char *) get_argument (2, esp);
+  char *buffer = (char *) *get_argument (2, esp);
   int size = *get_argument (3, esp);
-
-  printf("FD: %i %i: \n", fd, size);
-  printf(buffer);
 
   //TODO - check for safe memory of buffer
 
@@ -215,10 +212,7 @@ h_write (void *esp, uint32_t *return_value)
   {
     //TODO - break up larger buffers?
     lock_acquire (&filesys_lock);
-    /*putbuf (&("BOOM\n"), 5);
-    char *a = "" + size;
-    putbuf (&a, 1);*/
-    //putbuf (buffer, size);
+    putbuf (buffer, size);
     lock_release (&filesys_lock);
 
     *return_value = size;
@@ -227,8 +221,6 @@ h_write (void *esp, uint32_t *return_value)
   {
     //TODO - writing to files
     putbuf (&("BALLS"), 5);
-    //char *a = "" + fd;
-    //putbuf (&a, 1);
   }
 }
 
