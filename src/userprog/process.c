@@ -15,19 +15,63 @@
 #include "threads/init.h"
 #include "threads/interrupt.h"
 #include "threads/palloc.h"
+#include "threads/malloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "lib/string.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
+
+int
+number_of_tokens (const char *arg_string)
+{
+  bool spaces = true;
+  int n = 0;
+  int i = 0;
+  while (true)
+    {
+      if (arg_string[i] == '\0')
+        {
+          if (!spaces)
+            n++;
+          return n;
+        }
+      else if (arg_string[i] == ' ' && !spaces)
+        {
+          spaces = true;
+          n++;
+        }
+      else if (arg_string[i] != ' ' && spaces)
+        spaces = false;
+      i++;
+    }
+  return 0;
+}
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
    before process_execute() returns.  Returns the new process's
    thread id, or TID_ERROR if the thread cannot be created. */
 tid_t
-process_execute (const char *file_name) 
+process_execute (const char *arg_string_) 
 {
+  /* Tokenise the string, and store it in args. */
+  int n = number_of_tokens (arg_string_);
+  int i = 0;
+  char *args[n];
+  char *arg_string, *token, *save_ptr;
+  arg_string = malloc (sizeof (arg_string_));
+  strlcpy (arg_string, arg_string_, sizeof (arg_string)/sizeof (*arg_string));
+
+  for (token = strtok_r (arg_string, " ", &save_ptr); token != NULL;
+       token = strtok_r (NULL, " ", &save_ptr))
+    {
+      args[i] = token;
+      i++;
+    }
+
+  char *file_name = args[0];
   char *fn_copy;
   tid_t tid;
 
@@ -37,20 +81,22 @@ process_execute (const char *file_name)
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
+  args[0] = fn_copy;
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, args);
   if (tid == TID_ERROR)
-    palloc_free_page (fn_copy); 
+    palloc_free_page (fn_copy);
   return tid;
 }
 
 /* A thread function that loads a user process and starts it
    running. */
 static void
-start_process (void *file_name_)
+start_process (void *thing)
 {
-  char *file_name = file_name_;
+  char **args = (char **) thing;
+  char *file_name = args[0];
   struct intr_frame if_;
   bool success;
 
@@ -65,6 +111,23 @@ start_process (void *file_name_)
   palloc_free_page (file_name);
   if (!success) 
     thread_exit ();
+
+  int n = sizeof (args) / sizeof (*args);
+  int i;
+  for (i = 0; i < n; i++)
+    {
+      char *addr = if_.esp - (n - i - 1);
+      char *addr_ptr = if_.esp - (2 * n - i + 1);
+      *((char **) addr) = args[i];
+      *((char **) addr_ptr) = addr;
+      if (i == n - 1)
+        *((char ***) (if_.esp - (2 * n + 2))) = &addr_ptr;
+    }
+  *((uint8_t *) (if_.esp - n)) = 0;
+  *((char **) (if_.esp - (n + 1))) = NULL;
+  *((int *) (if_.esp - (2 * n + 3))) = n;
+  *((void **) (if_.esp - (2 * n + 4))) = 0;
+  if_.esp = if_.esp - (2 * n + 4);
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
