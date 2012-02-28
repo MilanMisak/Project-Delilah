@@ -131,6 +131,7 @@ thread_init (void)
   /* Initialised to 0, but needs to be converted to fixed-point arithmetic. */
   load_avg = FP_TO_FIXED_POINT(0);
 
+
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
   int initial_recent_cpu = FP_TO_FIXED_POINT(0);
@@ -147,7 +148,7 @@ thread_start (void)
   /* Create the idle thread. */
   struct semaphore idle_started;
   sema_init (&idle_started, 0);
-  thread_create ("idle", PRI_MIN, idle, &idle_started);
+  thread_create ("idle", PRI_MIN, idle, &idle_started, NULL);
 
   /* Start preemptive thread scheduling. */
   intr_enable ();
@@ -225,7 +226,7 @@ thread_print_stats (void)
    Priority scheduling is the goal of Problem 1-3. */
 tid_t
 thread_create (const char *name, int priority,
-               thread_func *function, void *aux) 
+               thread_func *function, void *aux, struct child* child) 
 {
   struct thread *t;
   struct kernel_thread_frame *kf;
@@ -244,6 +245,10 @@ thread_create (const char *name, int priority,
   /* Initialize thread. */
   init_thread (t, name, priority, thread_get_recent_cpu (),
                thread_get_nice ());
+
+  /* Assign the child struct */
+  t->child = child;
+
   /* Need to have a thread struct before calculating priority. */
   if (thread_mlfqs)
     t->priority = thread_calculate_priority (t); 
@@ -796,6 +801,12 @@ init_thread (struct thread *t, const char *name, int priority,
   sema_init (&t->priority_sema, 1);
 
   list_init (&t->open_files);
+
+#ifdef USERPROG
+  /* Set up proccess things */
+  list_init (&t->children);
+  t->orphan = false;
+#endif
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);

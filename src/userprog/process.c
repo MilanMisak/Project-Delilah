@@ -14,6 +14,7 @@
 #include "threads/flags.h"
 #include "threads/init.h"
 #include "threads/interrupt.h"
+#include "threads/malloc.h"
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
@@ -39,7 +40,16 @@ process_execute (const char *file_name)
   strlcpy (fn_copy, file_name, PGSIZE);
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  struct child *child = malloc (sizeof (struct child));
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy, child);
+  
+#ifdef USERPROG
+  child->tid = tid;
+  child->exitStatus = -1;
+  sema_init (&child->wait, 0);
+  list_push_back (&thread_current ()->children, &child->elem);
+#endif
+
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;

@@ -113,10 +113,25 @@ struct thread
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
+
+    bool orphan;                        /* Indicates wether the process'
+                                           parent is dead */
+    
+    struct child *child;                /* Link to the process' parent */
+
+    struct list children;               /* List of the process' children */
 #endif
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+  };
+
+struct child
+  {
+    struct list_elem elem;
+    tid_t tid;
+    int exitStatus;
+    struct semaphore wait;
   };
 
 /* If false (default), use round-robin scheduler.
@@ -131,7 +146,8 @@ void thread_tick (void);
 void thread_print_stats (void);
 
 typedef void thread_func (void *aux);
-tid_t thread_create (const char *name, int priority, thread_func *, void *);
+tid_t thread_create (const char *name, int priority, thread_func *, void *,
+                     struct child *child);
 
 void thread_block (void);
 void thread_unblock (struct thread *);
