@@ -15,6 +15,7 @@
 #include "threads/vaddr.h"
 #include "devices/timer.h"
 #ifdef USERPROG
+#include "lib/user/syscall.h"
 #include "userprog/process.h"
 #endif
 
@@ -131,6 +132,7 @@ thread_init (void)
   /* Initialised to 0, but needs to be converted to fixed-point arithmetic. */
   load_avg = FP_TO_FIXED_POINT(0);
 
+
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
   int initial_recent_cpu = FP_TO_FIXED_POINT(0);
@@ -147,7 +149,7 @@ thread_start (void)
   /* Create the idle thread. */
   struct semaphore idle_started;
   sema_init (&idle_started, 0);
-  thread_create ("idle", PRI_MIN, idle, &idle_started);
+  thread_create ("idle", PRI_MIN, idle, &idle_started, NULL);
 
   /* Start preemptive thread scheduling. */
   intr_enable ();
@@ -225,7 +227,7 @@ thread_print_stats (void)
    Priority scheduling is the goal of Problem 1-3. */
 tid_t
 thread_create (const char *name, int priority,
-               thread_func *function, void *aux) 
+               thread_func *function, void *aux, struct child* child) 
 {
   struct thread *t;
   struct kernel_thread_frame *kf;
@@ -244,6 +246,10 @@ thread_create (const char *name, int priority,
   /* Initialize thread. */
   init_thread (t, name, priority, thread_get_recent_cpu (),
                thread_get_nice ());
+
+  /* Assign the child struct */
+  t->child = child;
+
   /* Need to have a thread struct before calculating priority. */
   if (thread_mlfqs)
     t->priority = thread_calculate_priority (t); 
@@ -795,7 +801,15 @@ init_thread (struct thread *t, const char *name, int priority,
   list_init (&t->donated_priorities);
   sema_init (&t->priority_sema, 1);
 
+#ifdef USERPROG
   list_init (&t->open_files);
+#endif
+
+#ifdef USERPROG
+  /* Set up proccess things */
+  list_init (&t->children);
+  t->orphan = false;
+#endif
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
@@ -957,3 +971,54 @@ has_higher_priority (const struct list_elem *elem_1,
   return (thread_1->priority > thread_2->priority);
 }
 
+
+#ifdef USERPROG
+/* Adds a file to the list of opened files by the current thread. */
+int
+thread_add_open_file (struct file *file)
+{
+  struct thread *current = thread_current ();
+  int fd;
+
+  if (list_empty (&current->open_files))
+  {
+    /* 0 and 1 are reserved for STDIN and STDOUT. */
+    fd = 2;
+  }
+  else
+  {
+    struct list_elem *last_elem = list_rbegin (&current->open_files);
+    struct open_file *last_file = list_entry (last_elem, struct open_file, elem);
+    fd = last_file->fd + 1;
+  }
+
+  struct open_file *new_open_file = (struct open_file *) malloc (sizeof (struct open_file));
+  //TODO - check for when malloc returns NULL?
+  new_open_file->fd = fd;
+  new_open_file->file = file;
+  
+  list_push_back (&current->open_files, &new_open_file->elem);
+
+  return fd;
+}
+
+/* Closes an open file of the current thread identified by given
+   file descriptor (FD). */
+void
+thread_close_open_file (int fd)
+{
+  struct thread *current = thread_current ();
+  struct list_elem *e;
+
+  for (e = list_begin (&current->open_files); e != list_end (&current->open_files);
+       e = list_next (e))
+    {
+      struct open_file *of = list_entry (e, struct open_file, elem);
+      if (of->fd == fd)
+      {
+        list_remove (e);
+        return;
+      }
+    }
+}
+#endif

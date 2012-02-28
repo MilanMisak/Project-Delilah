@@ -1,5 +1,4 @@
 #include "userprog/syscall.h"
-#include "userprog/pagedir.h"
 #include <stdio.h>
 #include <syscall-nr.h>
 #include "devices/shutdown.h"
@@ -7,12 +6,12 @@
 #include "lib/kernel/console.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
-#include "threads/vaddr.h"
+#include "userprog/process.h"
 
 static void syscall_handler (struct intr_frame *);
 
-static void *get_argument(int n, void *esp);
-static uint32_t get_integer_argument(int n, void *esp);
+static void kill_process (void);
+static int *get_argument (int n, void *esp);
 
 static void h_halt     (void *esp, uint32_t *return_value);
 static void h_exit     (void *esp, uint32_t *return_value);
@@ -34,78 +33,87 @@ static handler (handlers[13]) = {&h_halt, &h_exit, &h_exec, &h_wait, &h_create,
                                  &h_remove, &h_open, &h_filesize, &h_read,
                                  &h_write, &h_seek, &h_tell, &h_close};
 
+static struct lock filesys_lock;
+
 void
 syscall_init (void) 
 {
+  lock_init (&filesys_lock);
+
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
 static void
 syscall_handler (struct intr_frame *f) 
 {
+  printf("HANDLER BOOOOM");
   /* Get ESP and EAX from the interrupt frame. */
   void *esp = f->esp;
   uint32_t *eax = &(f->eax);
   
   /* Get the system call number from the stack. */
   //TODO - need to check that ESP is valid before dereferencing
-  uint32_t syscall_number = *((uint32_t *) esp);
+  int syscall_number = *((int *) esp);
 
   /* Call the system call handler. */
   (*handlers[syscall_number]) (esp, eax);
 }
 
-/* Returns Nth argument (1-based) to the syscall handler from the stack. */
+/* Kills the current process. */
 static void
-*get_argument (int n, void *esp)
+kill_process (void)
 {
-  void *arg = esp + 4 * n;
-  // TODO - need to check that the pointer is valid and safe
-  return arg;
+  //TODO - release locks and such
+
+  /* Close files open by this process. */
+  struct thread *current = thread_current ();
+  struct list_elem *e;
+  while ((e = list_begin (&current->open_files)) != NULL)
+    {
+      struct open_file *of = list_entry (e, struct open_file, elem);
+      //TODO - close file
+    }
+
+  thread_exit ();
 }
 
-/* Returns Nth argument to the syscall handler and casts it to integer. */
-static uint32_t
-get_integer_argument (int n, void *esp)
+/* Returns Nth argument (1-based) to the syscall handler from the stack. */
+static int
+*get_argument (int n, void *esp)
 {
-  void *arg = get_argument (n, esp);
-  return *((uint32_t *) arg);
+  int *arg = (int *) esp + n;
+  // TODO - need to check that the pointer is valid and safe
+  return arg;
 }
 
 /*Reads a byte at user virtual address UADDR.
   UADDR must be below PHYS_BASE.
   Returns the byte value if successful, -1 if a segfault
   occurred. */
-/* static int
+static int
 get_user (const uint8_t *uaddr) {
   int result;
   asm ("movl $1f, %0; movzbl %1, %0; 1:"
        : "=&a" (result) : "m" (*uaddr));
   return result;
-} */
+}
 
 /* Writes BYTE to user address UDST.
    UDST must be below PHYS_BASE.
    Returns true if successful, false if a segfault occured. */
-/*static bool
+static bool
 put_user (uint8_t *udst, uint8_t byte) {
   int error_code;
   asm ("movl $1f, %0; movb %b2, %1; 1:"
       : "=&a" (error_code), "=m" (*udst) : "q" (byte));
   return error_code != -1;
-}*/
-
-static bool
-pointer_is_mapped (uint8_t *udst) {
-  return (udst != NULL && is_user_vaddr(*udst) &&
-          pagedir_get_page (active_pd (), *udst) != NULL);
 }
-
 
 /* The halt system call handler. */
 static void
 h_halt (void *esp, uint32_t *return_value)
 {
+  printf ("HALTBOOM");
   shutdown_power_off ();
 }
 
@@ -113,20 +121,33 @@ h_halt (void *esp, uint32_t *return_value)
 static void
 h_exit (void *esp, uint32_t *return_value)
 {
-  int status = get_integer_argument (1, esp);
+  int status = *get_argument (1, esp);
   *return_value = status;
+  
+  thread_current ()->child->exitStatus = status;
+  /* TODO - free all the children */
 
-  //TODO - do we need to free stuff? like release locks and such
-
-  thread_exit ();
+  kill_process ();
 }
 
 /* The exec system call handler. */
 static void
 h_exec (void *esp, uint32_t *return_value)
 {
-  //TODO - exec SC
-  thread_exit ();
+  /* Get CMD_LINE from the stack. */
+  char *cmd_line = (char *) *get_argument (1, esp);
+  //TODO - check that cmd_line is safe
+
+  lock_acquire (&filesys_lock);
+  tid_t tid = process_execute (cmd_line);
+  lock_release (&filesys_lock);
+
+  *return_value = tid;
+  if (tid == TID_ERROR)
+  {
+    /* Error: process cannot be executed. */
+    *return_value = -1;
+  }
 }
 
 /* The wait system call handler. */
@@ -141,12 +162,14 @@ static void
 h_create (void *esp, uint32_t *return_value)
 {
   /* Get FILE and INITIAL_SIZE from the stack. */
-  char *file = (char *) get_argument (1, esp);
+  char *file = (char *) *get_argument (1, esp);
   //TODO - check file is safe
-  uint32_t initial_size = get_integer_argument (2, esp);
+  int initial_size = *get_argument (2, esp);
 
   /* Return TRUE if file gets created, FALSE otherwise. */
+  lock_acquire (&filesys_lock);
   *return_value = filesys_create (file, initial_size);
+  lock_release (&filesys_lock);
 }
 
 /* The remove system call. */
@@ -154,11 +177,13 @@ static void
 h_remove (void *esp, uint32_t *return_value)
 {
   /* Get FILE from the stack. */
-  char *file = (char *) get_argument (1, esp);
+  char *file = (char *) *get_argument (1, esp);
   //TODO - check file is safe
 
   /* Return TRUE if file gets removed, FALSE otherwise. */
+  lock_acquire (&filesys_lock);
   *return_value = filesys_remove (file);
+  lock_release (&filesys_lock);
 }
 
 /* The open system call. */
@@ -166,17 +191,20 @@ static void
 h_open (void *esp, uint32_t *return_value)
 {
   /* Get FILE from the stack. */
-  char *file = (char *) get_argument (1, esp);
+  char *file = (char *) *get_argument (1, esp);
   //TODO - check file is safe
-
+ 
+  /* Try opening the file. */
+  lock_acquire (&filesys_lock);
   struct file *opened_file = filesys_open (file);
+  lock_release (&filesys_lock);
+
   if (opened_file == NULL)
   {
     *return_value = -1;
   }
   else
   {
-
     //TODO - store the struct file somewhere?
     
     
@@ -203,26 +231,30 @@ static void
 h_write (void *esp, uint32_t *return_value)
 {
   /* Get FD, BUFFER and SIZE from the stack. */
-  uint32_t fd = get_integer_argument (1, esp);
-  char *buffer = (char *) get_argument (2, esp);
-  uint32_t size = get_integer_argument (3, esp);
+  int fd = *get_argument (1, esp);
+  char *buffer = (char *) *get_argument (2, esp);
+  int size = *get_argument (3, esp);
 
   //TODO - check for safe memory of buffer
 
   if (fd == STDIN_FILENO)
   {
-    //TODO - error - reading from stdin
+    /* Trying to read from standard input = error -> kill the process. */
+    kill_process ();
   }
   else if (fd == STDOUT_FILENO)
   {
     //TODO - break up larger buffers?
+    lock_acquire (&filesys_lock);
     putbuf (buffer, size);
+    lock_release (&filesys_lock);
 
     *return_value = size;
   }
   else
   {
     //TODO - writing to files
+    putbuf (&("BALLS"), 5);
   }
 }
 
@@ -244,5 +276,7 @@ h_tell (void *esp, uint32_t *return_value)
 static void
 h_close (void *esp, uint32_t *return_value)
 {
-  //TODO - close SC
+  int fd = *get_argument (1, esp);
+  //TODO - check that fd is safe
+  thread_close_open_file (fd);
 }

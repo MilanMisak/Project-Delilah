@@ -14,6 +14,7 @@
 #include "threads/flags.h"
 #include "threads/init.h"
 #include "threads/interrupt.h"
+#include "threads/malloc.h"
 #include "threads/palloc.h"
 #include "threads/malloc.h"
 #include "threads/thread.h"
@@ -84,7 +85,14 @@ process_execute (const char *arg_string_)
   args[0] = fn_copy;
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, args);
+  struct child *child = malloc (sizeof (struct child));
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, args, child);
+  
+  child->tid = tid;
+  child->exitStatus = -1;
+  sema_init (&child->wait, 0);
+  list_push_back (&thread_current ()->children, &child->elem);
+
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
   return tid;
@@ -151,7 +159,22 @@ start_process (void *thing)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  return -1;
+  struct thread *current = thread_current ();
+  struct list_elem *e;
+  for (e = list_begin (&current->children); 
+       e != list_end (&current->children);
+       e = list_next (e))
+    {
+      struct child *c = list_entry (e, struct child, elem);
+
+      if (c->tid == child_tid) 
+      {
+          printf ("BOOM");
+          sema_down (&c->wait);
+          printf ("BOOM2");
+          return c->exitStatus;
+      }
+    }
 }
 
 /* Free the current process's resources. */
@@ -160,7 +183,8 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
-
+  struct child *c = cur->child;
+  
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
   pd = cur->pagedir;
@@ -177,6 +201,8 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
+
+  sema_up (&c->wait);
 }
 
 /* Sets up the CPU for running user code in the current
