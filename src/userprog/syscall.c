@@ -6,6 +6,7 @@
 #include "lib/kernel/console.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+#include "userprog/process.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -61,8 +62,17 @@ syscall_handler (struct intr_frame *f)
 static void
 kill_process (void)
 {
-  //TODO - close open files, do other clean up?
   //TODO - release locks and such
+
+  /* Close files open by this process. */
+  struct thread *current = thread_current ();
+  struct list_elem *e;
+  while ((e = list_begin (&current->open_files)) != NULL)
+    {
+      struct open_file *of = list_entry (e, struct open_file, elem);
+      //TODO - close file
+    }
+
   thread_exit ();
 }
 
@@ -123,15 +133,15 @@ h_exec (void *esp, uint32_t *return_value)
   char *cmd_line = (char *) *get_argument (1, esp);
   //TODO - check that cmd_line is safe
 
+  lock_acquire (&filesys_lock);
   tid_t tid = process_execute (cmd_line);
+  lock_release (&filesys_lock);
+
+  *return_value = tid;
   if (tid == TID_ERROR)
   {
     /* Error: process cannot be executed. */
     *return_value = -1;
-  }
-  else
-  {
-    *return_value = tid;
   }
 }
 
@@ -261,5 +271,7 @@ h_tell (void *esp, uint32_t *return_value)
 static void
 h_close (void *esp, uint32_t *return_value)
 {
-  //TODO - close SC
+  int fd = *get_argument (1, esp);
+  //TODO - check that fd is safe
+  thread_close_open_file (fd);
 }
