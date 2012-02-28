@@ -15,6 +15,7 @@
 #include "threads/vaddr.h"
 #include "devices/timer.h"
 #ifdef USERPROG
+#include "lib/user/syscall.h"
 #include "userprog/process.h"
 #endif
 
@@ -800,7 +801,9 @@ init_thread (struct thread *t, const char *name, int priority,
   list_init (&t->donated_priorities);
   sema_init (&t->priority_sema, 1);
 
+#ifdef USERPROG
   list_init (&t->open_files);
+#endif
 
 #ifdef USERPROG
   /* Set up proccess things */
@@ -968,3 +971,54 @@ has_higher_priority (const struct list_elem *elem_1,
   return (thread_1->priority > thread_2->priority);
 }
 
+
+#ifdef USERPROG
+/* Adds a file to the list of opened files by the current thread. */
+int
+thread_add_open_file (struct file *file)
+{
+  struct thread *current = thread_current ();
+  int fd;
+
+  if (list_empty (&current->open_files))
+  {
+    /* 0 and 1 are reserved for STDIN and STDOUT. */
+    fd = 2;
+  }
+  else
+  {
+    struct list_elem *last_elem = list_rbegin (&current->open_files);
+    struct open_file *last_file = list_entry (last_elem, struct open_file, elem);
+    fd = last_file->fd + 1;
+  }
+
+  struct open_file *new_open_file = (struct open_file *) malloc (sizeof (struct open_file));
+  //TODO - check for when malloc returns NULL?
+  new_open_file->fd = fd;
+  new_open_file->file = file;
+  
+  list_push_back (&current->open_files, &new_open_file->elem);
+
+  return fd;
+}
+
+/* Closes an open file of the current thread identified by given
+   file descriptor (FD). */
+void
+thread_close_open_file (int fd)
+{
+  struct thread *current = thread_current ();
+  struct list_elem *e;
+
+  for (e = list_begin (&current->open_files); e != list_end (&current->open_files);
+       e = list_next (e))
+    {
+      struct open_file *of = list_entry (e, struct open_file, elem);
+      if (of->fd == fd)
+      {
+        list_remove (e);
+        return;
+      }
+    }
+}
+#endif

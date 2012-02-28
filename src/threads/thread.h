@@ -105,7 +105,6 @@ struct thread
     struct semaphore priority_sema;     /* Semaphore to control access to 
                                            donated priorities */
 
-    struct list open_files;             /* List of open files by this process. */
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -120,12 +119,15 @@ struct thread
     struct child *child;                /* Link to the process' parent */
 
     struct list children;               /* List of the process' children */
+
+    struct list open_files;             /* List of open files by this process. */
 #endif
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
   };
 
+#ifdef USERPROG
 struct child
   {
     struct list_elem elem;
@@ -133,6 +135,16 @@ struct child
     int exitStatus;
     struct semaphore wait;
   };
+
+/* An open file belonging to a process. It has a unique (per process)
+   file descriptor. */
+struct open_file
+  {
+    int fd;                             /* File descriptor. */
+    struct file *file;                  /* Pointer to the file struct. */
+    struct list_elem elem;              /* List element. */
+  };
+#endif
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
@@ -181,5 +193,10 @@ bool has_lower_priority (const struct list_elem *elem_1,
                          const struct list_elem *elem_2, void *aux);
 bool has_higher_priority (const struct list_elem *elem_1,
                           const struct list_elem *elem_2, void *aux);
+
+#ifdef USERPROG
+int thread_add_open_file (struct file *file);
+void thread_close_open_file (int fd);
+#endif
 
 #endif /* threads/thread.h */
