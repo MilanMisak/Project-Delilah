@@ -123,6 +123,7 @@ h_exit (struct intr_frame *f)
   thread_current ()->child->exitStatus = status;
   /* TODO - free all the children */
 
+  printf ("%s: exit(%d)\n", thread_current ()->name, status);
   kill_process ();
 }
 
