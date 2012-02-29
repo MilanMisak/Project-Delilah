@@ -7,12 +7,15 @@
 #include "lib/kernel/console.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+#include "threads/vaddr.h"
 #include "userprog/process.h"
 
 static void syscall_handler (struct intr_frame *);
 
 static void kill_process (void);
 static int *get_argument (int n, void *esp);
+
+static int get_user (const uint8_t *uaddr);
 
 static void h_halt     (struct intr_frame *f);
 static void h_exit     (struct intr_frame *f);
@@ -80,17 +83,22 @@ static int
 *get_argument (int n, void *esp)
 {
   int *arg = (int *) esp + n;
+  if (get_user ((uint8_t *) arg) == -1)
+    kill_process ();
   // TODO - need to check that the pointer is valid and safe
   return arg;
 }
 
-/*Reads a byte at user virtual address UADDR.
-  UADDR must be below PHYS_BASE.
-  Returns the byte value if successful, -1 if a segfault
-  occurred. */
+/* Reads a byte at user virtual address UADDR.
+   UADDR must be below PHYS_BASE.
+   Returns the byte value if successful, -1 if a segfault
+   occurred. */
 static int
-get_user (const uint8_t *uaddr) {
+get_user (const uint8_t *uaddr)
+{
   int result;
+  if (! is_user_vaddr (uaddr))
+    return -1;
   asm ("movl $1f, %0; movzbl %1, %0; 1:"
        : "=&a" (result) : "m" (*uaddr));
   return result;
@@ -100,7 +108,8 @@ get_user (const uint8_t *uaddr) {
    UDST must be below PHYS_BASE.
    Returns true if successful, false if a segfault occured. */
 static bool
-put_user (uint8_t *udst, uint8_t byte) {
+put_user (uint8_t *udst, uint8_t byte)
+{
   int error_code;
   asm ("movl $1f, %0; movb %b2, %1; 1:"
       : "=&a" (error_code), "=m" (*udst) : "q" (byte));
