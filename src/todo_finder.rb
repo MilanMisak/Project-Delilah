@@ -82,7 +82,7 @@ class SearchingStrategy
 end
 
 if ARGV.length == 1
-  regex = /(.{0,10})(#{ARGV[0]})(.{0,10})/
+  regex = /(.{0,10})(#{Regexp.quote(ARGV[0])})(.{0,10})/
   strategy = SearchingStrategy.new(regex)
 else
   strategy = AnalyzingStrategy.new
