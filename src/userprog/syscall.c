@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <syscall-nr.h>
 #include "devices/shutdown.h"
+#include "filesys/file.h"
 #include "filesys/filesys.h"
 #include "lib/kernel/console.h"
 #include "threads/interrupt.h"
@@ -13,22 +14,22 @@ static void syscall_handler (struct intr_frame *);
 static void kill_process (void);
 static int *get_argument (int n, void *esp);
 
-static void h_halt     (void *esp, uint32_t *return_value);
-static void h_exit     (void *esp, uint32_t *return_value);
-static void h_exec     (void *esp, uint32_t *return_value);
-static void h_wait     (void *esp, uint32_t *return_value);
-static void h_create   (void *esp, uint32_t *return_value);
-static void h_remove   (void *esp, uint32_t *return_value);
-static void h_open     (void *esp, uint32_t *return_value);
-static void h_filesize (void *esp, uint32_t *return_value);
-static void h_read     (void *esp, uint32_t *return_value);
-static void h_write    (void *esp, uint32_t *return_value);
-static void h_seek     (void *esp, uint32_t *return_value);
-static void h_tell     (void *esp, uint32_t *return_value);
-static void h_close    (void *esp, uint32_t *return_value);
+static void h_halt     (struct intr_frame *f);
+static void h_exit     (struct intr_frame *f);
+static void h_exec     (struct intr_frame *f);
+static void h_wait     (struct intr_frame *f);
+static void h_create   (struct intr_frame *f);
+static void h_remove   (struct intr_frame *f);
+static void h_open     (struct intr_frame *f);
+static void h_filesize (struct intr_frame *f);
+static void h_read     (struct intr_frame *f);
+static void h_write    (struct intr_frame *f);
+static void h_seek     (struct intr_frame *f);
+static void h_tell     (struct intr_frame *f);
+static void h_close    (struct intr_frame *f);
 
 /* System call handlers array. */
-typedef void (*handler) (void *esp, uint32_t *return_value);
+typedef void (*handler) (struct intr_frame *f);
 static handler (handlers[13]) = {&h_halt, &h_exit, &h_exec, &h_wait, &h_create,
                                  &h_remove, &h_open, &h_filesize, &h_read,
                                  &h_write, &h_seek, &h_tell, &h_close};
@@ -46,16 +47,12 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f) 
 {
-  /* Get ESP and EAX from the interrupt frame. */
-  void *esp = f->esp;
-  uint32_t *eax = &(f->eax);
-  
   /* Get the system call number from the stack. */
   //TODO - need to check that ESP is valid before dereferencing
-  int syscall_number = *((int *) esp);
+  int syscall_number = *((int *) f->esp);
 
   /* Call the system call handler. */
-  (*handlers[syscall_number]) (esp, eax);
+  (*handlers[syscall_number]) (f);
 }
 
 /* Kills the current process. */
@@ -111,17 +108,17 @@ put_user (uint8_t *udst, uint8_t byte) {
 
 /* The halt system call handler. */
 static void
-h_halt (void *esp, uint32_t *return_value)
+h_halt (struct intr_frame *f)
 {
   shutdown_power_off ();
 }
 
 /* The exit system call handler. */
 static void
-h_exit (void *esp, uint32_t *return_value)
+h_exit (struct intr_frame *f)
 {
-  int status = *get_argument (1, esp);
-  *return_value = status;
+  int status = *get_argument (1, f->esp);
+  f->eax = status;
   
   thread_current ()->child->exitStatus = status;
   /* TODO - free all the children */
@@ -131,66 +128,66 @@ h_exit (void *esp, uint32_t *return_value)
 
 /* The exec system call handler. */
 static void
-h_exec (void *esp, uint32_t *return_value)
+h_exec (struct intr_frame *f)
 {
   /* Get CMD_LINE from the stack. */
-  char *cmd_line = (char *) *get_argument (1, esp);
+  char *cmd_line = (char *) *get_argument (1, f->esp);
   //TODO - check that cmd_line is safe
 
   lock_acquire (&filesys_lock);
   tid_t tid = process_execute (cmd_line);
   lock_release (&filesys_lock);
 
-  *return_value = tid;
+  f->eax = tid;
   if (tid == TID_ERROR)
   {
     /* Error: process cannot be executed. */
-    *return_value = -1;
+    f->eax = -1;
   }
 }
 
 /* The wait system call handler. */
 static void
-h_wait (void *esp, uint32_t *return_value)
+h_wait (struct intr_frame *f)
 {
   //TODO - wait SC
 }
 
 /* The create system call. */
 static void
-h_create (void *esp, uint32_t *return_value)
+h_create (struct intr_frame *f)
 {
   /* Get FILE and INITIAL_SIZE from the stack. */
-  char *file = (char *) *get_argument (1, esp);
+  char *file = (char *) *get_argument (1, f->esp);
   //TODO - check file is safe
-  int initial_size = *get_argument (2, esp);
+  int initial_size = *get_argument (2, f->esp);
 
   /* Return TRUE if file gets created, FALSE otherwise. */
   lock_acquire (&filesys_lock);
-  *return_value = filesys_create (file, initial_size);
+  f->eax = filesys_create (file, initial_size);
   lock_release (&filesys_lock);
 }
 
 /* The remove system call. */
 static void
-h_remove (void *esp, uint32_t *return_value)
+h_remove (struct intr_frame *f)
 {
   /* Get FILE from the stack. */
-  char *file = (char *) *get_argument (1, esp);
+  char *file = (char *) *get_argument (1, f->esp);
   //TODO - check file is safe
 
   /* Return TRUE if file gets removed, FALSE otherwise. */
   lock_acquire (&filesys_lock);
-  *return_value = filesys_remove (file);
+  f->eax = filesys_remove (file);
   lock_release (&filesys_lock);
 }
 
 /* The open system call. */
 static void
-h_open (void *esp, uint32_t *return_value)
+h_open (struct intr_frame *f)
 {
   /* Get FILE from the stack. */
-  char *file = (char *) *get_argument (1, esp);
+  char *file = (char *) *get_argument (1, f->esp);
   //TODO - check file is safe
  
   /* Try opening the file. */
@@ -201,21 +198,21 @@ h_open (void *esp, uint32_t *return_value)
   if (opened_file == NULL)
     {
       /* File could not be opened. */
-      *return_value = -1;
+      f->eax = -1;
     }
   else
     {
-      int fd = thread_add_open_file (&opened_file);
-      *return_value = fd;
+      int fd = thread_add_open_file (opened_file);
+      f->eax = fd;
     }
 }
 
 /* The filesize system call. */
 static void
-h_filesize (void *esp, uint32_t *return_value)
+h_filesize (struct intr_frame *f)
 {
   /* Get FD from the stack. */
-  int fd = *get_argument (1, esp);
+  int fd = *get_argument (1, f->esp);
 
   /* Get FILE with given FD from the current thread. */
   struct file *file = thread_get_open_file (fd);
@@ -230,24 +227,24 @@ h_filesize (void *esp, uint32_t *return_value)
   int size = file_length (file);
   lock_release (&filesys_lock);
 
-  *return_value = size;
+  f->eax = size;
 }
 
 /* The read system call. */
 static void
-h_read (void *esp, uint32_t *return_value)
+h_read (struct intr_frame *f)
 {
   //TODO - read SC
 }
 
 /* The write system call. */
 static void
-h_write (void *esp, uint32_t *return_value)
+h_write (struct intr_frame *f)
 {
   /* Get FD, BUFFER and SIZE from the stack. */
-  int fd = *get_argument (1, esp);
-  char *buffer = (char *) *get_argument (2, esp);
-  int size = *get_argument (3, esp);
+  int fd = *get_argument (1, f->esp);
+  char *buffer = (char *) *get_argument (2, f->esp);
+  int size = *get_argument (3, f->esp);
 
   //TODO - check for safe memory of buffer
 
@@ -264,7 +261,7 @@ h_write (void *esp, uint32_t *return_value)
     if (size <= buffer_max_length)
       {
         putbuf (buffer, size);
-        *return_value = size;
+        f->eax = size;
       }
     else
       {
@@ -277,7 +274,7 @@ h_write (void *esp, uint32_t *return_value)
             bytes_written += buffer_max_length;
           }
         putbuf (buffer + bytes_written, size);
-        *return_value = bytes_written;
+        f->eax = bytes_written;
       }
     lock_release (&filesys_lock);
   }
@@ -290,23 +287,23 @@ h_write (void *esp, uint32_t *return_value)
 
 /* The seek system call. */
 static void
-h_seek (void *esp, uint32_t *return_value)
+h_seek (struct intr_frame *f)
 {
   //TODO - seek SC
 }
 
 /* The tell system call. */
 static void
-h_tell (void *esp, uint32_t *return_value)
+h_tell (struct intr_frame *f)
 {
   //TODO - tell SC
 }
 
 /* The close system call. */
 static void
-h_close (void *esp, uint32_t *return_value)
+h_close (struct intr_frame *f)
 {
-  int fd = *get_argument (1, esp);
+  int fd = *get_argument (1, f->esp);
   //TODO - check that fd is safe
   thread_close_open_file (fd);
 }
