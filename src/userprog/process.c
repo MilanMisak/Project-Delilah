@@ -44,7 +44,7 @@ process_execute (const char *args)
 
   /* Get the FILE_NAME from ARGS. */
   char *save_ptr;
-  char *file_name = strtok_r (args, " ", &save_ptr);
+  char *file_name = strtok_r (args_copy, " ", &save_ptr);
 
   /* Create a new thread to execute FILE_NAME. */
   struct child *child = malloc (sizeof (struct child));
@@ -64,12 +64,30 @@ process_execute (const char *args)
 /* A thread function that loads a user process and starts it
    running. */
 static void
-start_process (void *thing)
+start_process (void *args_)
 {
-  char **args = (char **) thing;
-  char *file_name = args[0];
+  char *args = args_;
   struct intr_frame if_;
   bool success;
+
+  /* Get the FILE_NAME from ARGS. */
+  char *token, *save_ptr; 
+  int argc = 0;
+  char **argv = (char **) malloc ((strlen (args) + 1) * sizeof (char));
+  for (token = strtok_r (args, " ", &save_ptr); token != NULL;
+       token = strtok_r (NULL, " ", &save_ptr))
+    {
+      argv[argc++] = token;
+      printf ("ARGV: <<%s>>\n", argv[argc - 1]);
+    }
+
+  char *file_name = argv[0];
+
+  
+  printf ("FILE_NAME: %s\n", file_name);
+  printf ("ARGS: <<%s>>\n", args);
+  printf ("ARGV[0]: <<%s>>\n", argv[0]);
+  //if_.esp -= 8;
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
@@ -79,14 +97,58 @@ start_process (void *thing)
   success = load (file_name, &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
-  palloc_free_page (file_name);
   if (!success) 
     thread_exit ();
 
-  printf ("ESP: %x, PHYS_BASE: %x\n", if_.esp, PHYS_BASE);
+  int **argv_addr = (int **) malloc (argc * sizeof (int *));
+  void *esp = if_.esp;
+  printf ("ESP: %i, %x, %i\n", *((int *) esp), *((int *) esp), if_.esp);
+  int total_argv_len = 0;
 
-//  if_.esp -= 4;
-  if_.esp -= 8;
+  int i;
+  for (i = argc - 1; i >= 0; i--)
+    {
+      printf ("I: %i, S: %s\n", i, argv[i]);
+      int arg_len = strlen (argv[i]) + 1;
+
+      total_argv_len += arg_len;
+      esp -= arg_len;
+
+      memcpy (esp, argv[i], arg_len);
+      argv_addr[i] = (int *) esp;
+    }
+ 
+  /* Word-align ESP. */
+  if (total_argv_len % 4 != 0)
+    esp -= 4 - total_argv_len % 4;
+
+  /* Push a null pointer sentinel. */
+  esp -= 4;
+  *((int *) esp) = 0;
+
+
+  /* Push pointers to argv elements on stack. */
+  for (i = argc - 1; i >= 0; i--)
+    {
+      esp -= 4;
+      *((void **) esp) = argv[i];
+    }
+
+  /* Push ARGV. */
+  int **addr = esp;
+  esp -= 4;
+  *((void **) esp) = addr;
+
+  /* Push ARGC. */
+  esp -= 4;
+  *((int *) esp) = argc;
+
+  /* Push fake return address. */
+  esp -= 4;
+  *((int *) esp) = 0;
+
+
+  /*if_.esp -= 8;
   printf ("ESP: %x, PHYS_BASE: %x\n", if_.esp, PHYS_BASE);
 
   int n = sizeof (args) / sizeof (*args);
@@ -109,7 +171,7 @@ start_process (void *thing)
 
   //hex_dump (4, if_.esp, 8, true);
 
-  printf("\nI'm a pretty butterfly\n");
+  printf("\nI'm a pretty butterfly\n");*/
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
