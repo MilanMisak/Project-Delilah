@@ -122,6 +122,12 @@ start_process (void *thing)
   if (!success) 
     thread_exit ();
 
+  printf ("ESP: %x, PHYS_BASE: %x\n", if_.esp, PHYS_BASE);
+
+//  if_.esp -= 4;
+  if_.esp -= 8;
+  printf ("ESP: %x, PHYS_BASE: %x\n", if_.esp, PHYS_BASE);
+
   int n = sizeof (args) / sizeof (*args);
   int i;
   for (i = 0; i < n; i++)
@@ -138,6 +144,9 @@ start_process (void *thing)
   *((int *) (if_.esp - (2 * n + 3))) = n;
   *((void **) (if_.esp - (2 * n + 4))) = 0;
   if_.esp = if_.esp - (2 * n + 4);
+  printf ("ESP: %x, PHYS_BASE: %x\n", if_.esp, PHYS_BASE);
+
+  //hex_dump (4, if_.esp, 8, true);
 
   printf("\nI'm a pretty butterfly\n");
 
@@ -175,6 +184,7 @@ process_wait (tid_t child_tid UNUSED)
       {
           printf ("BOOM");
           sema_down (&c->wait);
+          sema_up (&c->wait);
           printf ("BOOM2");
           return c->exitStatus;
       }
@@ -531,7 +541,7 @@ setup_stack (void **esp)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-        *esp = PHYS_BASE - 12;
+        *esp = PHYS_BASE;
       else
         palloc_free_page (kpage);
     }
