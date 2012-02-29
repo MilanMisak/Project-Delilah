@@ -20,6 +20,7 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "lib/string.h"
+#include "lib/stdio.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -55,20 +56,21 @@ number_of_tokens (const char *arg_string)
    before process_execute() returns.  Returns the new process's
    thread id, or TID_ERROR if the thread cannot be created. */
 tid_t
-process_execute (const char *arg_string_) 
+process_execute (const char *arg_string) 
 {
   /* Tokenise the string, and store it in args. */
-  int n = number_of_tokens (arg_string_);
+  int n = number_of_tokens (arg_string);
   int i = 0;
   char *args[n];
-  char *arg_string, *token, *save_ptr;
-  arg_string = malloc (sizeof (arg_string_));
-  strlcpy (arg_string, arg_string_, sizeof (arg_string)/sizeof (*arg_string));
+  char *token, *save_ptr;
 
+  printf("\n");
   for (token = strtok_r (arg_string, " ", &save_ptr); token != NULL;
        token = strtok_r (NULL, " ", &save_ptr))
     {
       args[i] = token;
+      printf("%i", i);
+      printf("%s\n", args[i]);
       i++;
     }
 
@@ -137,6 +139,8 @@ start_process (void *thing)
   *((void **) (if_.esp - (2 * n + 4))) = 0;
   if_.esp = if_.esp - (2 * n + 4);
 
+  printf("\nI'm a pretty butterfly\n");
+
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
      threads/intr-stubs.S).  Because intr_exit takes all of its
@@ -175,6 +179,7 @@ process_wait (tid_t child_tid UNUSED)
           return c->exitStatus;
       }
     }
+  return -1;
 }
 
 /* Free the current process's resources. */
