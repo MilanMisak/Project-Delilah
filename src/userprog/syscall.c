@@ -96,9 +96,10 @@ static int
 static int
 get_user (const uint8_t *uaddr)
 {
-  int result;
-  if (! is_user_vaddr (uaddr))
+  if (! is_user_vaddr ((void *) uaddr))
     return -1;
+
+  int result;
   asm ("movl $1f, %0; movzbl %1, %0; 1:"
        : "=&a" (result) : "m" (*uaddr));
   return result;
@@ -173,6 +174,11 @@ h_create (struct intr_frame *f)
 {
   /* Get FILE and INITIAL_SIZE from the stack. */
   char *file = (char *) *get_argument (1, f->esp);
+  if (file == NULL)
+    {
+      /* Error: FILE cannot be NULL. */
+      kill_process ();
+    }
   //TODO - check file is safe
   int initial_size = *get_argument (2, f->esp);
 
@@ -188,6 +194,11 @@ h_remove (struct intr_frame *f)
 {
   /* Get FILE from the stack. */
   char *file = (char *) *get_argument (1, f->esp);
+  if (file == NULL)
+    {
+      /* Error: FILE cannot be NULL. */
+      kill_process ();
+    }
   //TODO - check file is safe
 
   /* Return TRUE if file gets removed, FALSE otherwise. */
@@ -202,6 +213,11 @@ h_open (struct intr_frame *f)
 {
   /* Get FILE from the stack. */
   char *file = (char *) *get_argument (1, f->esp);
+  if (file == NULL)
+    {
+      /* Error: FILE cannot be NULL. */
+      kill_process ();
+    }
   //TODO - check file is safe
  
   /* Try opening the file. */
@@ -248,7 +264,36 @@ h_filesize (struct intr_frame *f)
 static void
 h_read (struct intr_frame *f)
 {
-  //TODO - read SC
+  /* Get FD, BUFFER and SIZE from the stack. */
+  int fd = *get_argument (1, f->esp);
+  char *buffer = (char *) *get_argument (2, f->esp);
+  if (buffer == NULL)
+    {
+      /* Error: BUFFER cannot be NULL. */
+      kill_process ();
+    }
+  int size = *get_argument (3, f->esp);
+
+  if (fd == STDIN_FILENO)
+    {
+//TODO - read
+    }
+  else if (fd == STDOUT_FILENO)
+    {
+      /* Trying to read from standard output = error -> kill the process. */
+      kill_process ();
+    }
+  else
+    {
+      /* Get FILE with given FD from the current thread. */
+      struct file *file = thread_get_open_file (fd);
+      if (file == NULL)
+        {
+          /* Error: could not find the open file with given FD. */
+          kill_process ();
+        }
+//TODO - read
+    }
 }
 
 /* The write system call. */
@@ -258,51 +303,72 @@ h_write (struct intr_frame *f)
   /* Get FD, BUFFER and SIZE from the stack. */
   int fd = *get_argument (1, f->esp);
   char *buffer = (char *) *get_argument (2, f->esp);
+  if (buffer == NULL)
+    {
+      /* Error: BUFFER cannot be NULL. */
+      kill_process ();
+    }
   int size = *get_argument (3, f->esp);
 
   //TODO - check for safe memory of buffer
 
   if (fd == STDIN_FILENO)
-  {
-    /* Trying to read from standard input = error -> kill the process. */
-    kill_process ();
-  }
+    {
+      /* Trying to write to standard input = error -> kill the process. */
+      kill_process ();
+    }
   else if (fd == STDOUT_FILENO)
-  {
-    int buffer_max_length = 256;
+    {
+      int buffer_max_length = 256;
 
-    lock_acquire (&filesys_lock);
-    if (size <= buffer_max_length)
-      {
-        putbuf (buffer, size);
-        f->eax = size;
-      }
-    else
-      {
-        /* Break up larger buffers into chunks of 256 bytes. */
-        int bytes_written = 0;
-        while (size > buffer_max_length)
-          {
-            putbuf (buffer + bytes_written, buffer_max_length);
-            size -= buffer_max_length;
-            bytes_written += buffer_max_length;
-          }
-        putbuf (buffer + bytes_written, size);
-        f->eax = bytes_written;
-      }
-    lock_release (&filesys_lock);
-  }
+      lock_acquire (&filesys_lock);
+      if (size <= buffer_max_length)
+        {
+          putbuf (buffer, size);
+          f->eax = size;
+        }
+      else
+        {
+          /* Break up larger buffers into chunks of 256 bytes. */
+          int bytes_written = 0;
+          while (size > buffer_max_length)
+            {
+              putbuf (buffer + bytes_written, buffer_max_length);
+              size -= buffer_max_length;
+              bytes_written += buffer_max_length;
+            }
+          putbuf (buffer + bytes_written, size);
+          f->eax = bytes_written;
+        }
+      lock_release (&filesys_lock);
+    }
   else
-  {
+    {
+      /* Get FILE with given FD from the current thread. */
+      struct file *file = thread_get_open_file (fd);
+      if (file == NULL)
+        {
+          /* Error: could not find the open file with given FD. */
+          kill_process ();
+        }
     //TODO - writing to files
-    putbuf (&("BALLS"), 5);
-  }
+    }
 }
 
 /* The seek system call. */
 static void
 h_seek (struct intr_frame *f)
 {
+  /* Get FD, BUFFER and SIZE from the stack. */
+  int fd = *get_argument (1, f->esp);
+  
+  /* Get FILE with given FD from the current thread. */
+  struct file *file = thread_get_open_file (fd);
+  if (file == NULL)
+    {
+      /* Error: could not find the open file with given FD. */
+      kill_process ();
+    }
   //TODO - seek SC
 }
 
@@ -310,6 +376,16 @@ h_seek (struct intr_frame *f)
 static void
 h_tell (struct intr_frame *f)
 {
+  /* Get FD, BUFFER and SIZE from the stack. */
+  int fd = *get_argument (1, f->esp);
+  
+  /* Get FILE with given FD from the current thread. */
+  struct file *file = thread_get_open_file (fd);
+  if (file == NULL)
+    {
+      /* Error: could not find the open file with given FD. */
+      kill_process ();
+    }
   //TODO - tell SC
 }
 
