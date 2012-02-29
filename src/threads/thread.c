@@ -987,11 +987,13 @@ thread_add_open_file (struct file *file)
   else
   {
     struct list_elem *last_elem = list_rbegin (&current->open_files);
-    struct open_file *last_file = list_entry (last_elem, struct open_file, elem);
+    struct open_file *last_file =
+        list_entry (last_elem, struct open_file, elem);
     fd = last_file->fd + 1;
   }
 
-  struct open_file *new_open_file = (struct open_file *) malloc (sizeof (struct open_file));
+  struct open_file *new_open_file =
+      (struct open_file *) malloc (sizeof (struct open_file));
   //TODO - check for when malloc returns NULL?
   new_open_file->fd = fd;
   new_open_file->file = file;
@@ -999,6 +1001,27 @@ thread_add_open_file (struct file *file)
   list_push_back (&current->open_files, &new_open_file->elem);
 
   return fd;
+}
+
+/* Returns a file open by the current thread with given file descriptor (FD)
+   or NULL if there is no such a file. */
+struct file
+*thread_get_open_file (int fd)
+{
+  struct thread *current = thread_current ();
+  struct list_elem *e;
+
+  for (e = list_begin (&current->open_files);
+       e != list_end (&current->open_files); e = list_next (e))
+    {
+      struct open_file *of = list_entry (e, struct open_file, elem);
+      if (of->fd == fd)
+      {
+        return of->file;
+      }
+    }
+  
+  return NULL;
 }
 
 /* Closes an open file of the current thread identified by given
@@ -1009,8 +1032,8 @@ thread_close_open_file (int fd)
   struct thread *current = thread_current ();
   struct list_elem *e;
 
-  for (e = list_begin (&current->open_files); e != list_end (&current->open_files);
-       e = list_next (e))
+  for (e = list_begin (&current->open_files);
+       e != list_end (&current->open_files); e = list_next (e))
     {
       struct open_file *of = list_entry (e, struct open_file, elem);
       if (of->fd == fd)

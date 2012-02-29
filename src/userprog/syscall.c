@@ -200,23 +200,38 @@ h_open (void *esp, uint32_t *return_value)
   lock_release (&filesys_lock);
 
   if (opened_file == NULL)
-  {
-    *return_value = -1;
-  }
+    {
+      /* File could not be opened. */
+      *return_value = -1;
+    }
   else
-  {
-    //TODO - store the struct file somewhere?
-    
-    
-    *return_value = 5; //TODO - an actual fd needed here
-  }
+    {
+      int fd = thread_add_open_file (&opened_file);
+      *return_value = fd;
+    }
 }
 
 /* The filesize system call. */
 static void
 h_filesize (void *esp, uint32_t *return_value)
 {
-  //TODO - filesize SC
+  /* Get FD from the stack. */
+  int fd = *get_argument (1, esp);
+
+  /* Get FILE with given FD from the current thread. */
+  struct file *file = thread_get_open_file (fd);
+  if (file == NULL)
+    {
+      /* Error: could not find the open file with given FD. */
+      kill_process ();
+    }
+
+  /* Get file size in bytes. */
+  lock_acquire (&filesys_lock);
+  int size = file_length (file);
+  lock_release (&filesys_lock);
+
+  *return_value = size;
 }
 
 /* The read system call. */

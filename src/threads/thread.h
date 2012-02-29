@@ -109,15 +109,15 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
+    struct child *child;                /* Link to the process' parent */
+
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
 
-    bool orphan;                        /* Indicates wether the process'
+    bool orphan;                        /* Indicates whether the process'
                                            parent is dead */
     
-    struct child *child;                /* Link to the process' parent */
-
     struct list children;               /* List of the process' children */
 
     struct list open_files;             /* List of open files by this process. */
@@ -127,7 +127,6 @@ struct thread
     unsigned magic;                     /* Detects stack overflow. */
   };
 
-#ifdef USERPROG
 struct child
   {
     struct list_elem elem;
@@ -136,6 +135,7 @@ struct child
     struct semaphore wait;
   };
 
+#ifdef USERPROG
 /* An open file belonging to a process. It has a unique (per process)
    file descriptor. */
 struct open_file
@@ -196,6 +196,7 @@ bool has_higher_priority (const struct list_elem *elem_1,
 
 #ifdef USERPROG
 int thread_add_open_file (struct file *file);
+struct file *thread_get_open_file (int fd);
 void thread_close_open_file (int fd);
 #endif
 
