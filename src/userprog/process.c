@@ -44,7 +44,10 @@ process_execute (const char *args)
 
   /* Get the FILE_NAME from ARGS. */
   char *save_ptr;
-  char *file_name = strtok_r (args, " ", &save_ptr);
+  char *file_name = strtok_r (args_copy, " ", &save_ptr);
+
+  /* Restore ARGS_COPY after strtok_r. */
+  strlcpy (args_copy, args, PGSIZE);
 
   /* Create a new thread to execute FILE_NAME. */
   struct child *child = malloc (sizeof (struct child));
@@ -70,26 +73,18 @@ start_process (void *args_)
   struct intr_frame if_;
   bool success;
 
-  /* Get the FILE_NAME from ARGS. */
+  /* Get ARGV and FILE_NAME from ARGS. */
   char *token, *save_ptr; 
   int argc = 0;
+
   char **argv = (char **) malloc ((strlen (args) + 1) * sizeof (char));
-  printf ("SL: %i\n", strlen (args));
   for (token = strtok_r (args, " ", &save_ptr); token != NULL;
        token = strtok_r (NULL, " ", &save_ptr))
     {
-      printf ("BOOOOOOOM");
       argv[argc++] = token;
-      printf ("ARGV: <<%s>>\n", argv[argc - 1]);
     }
 
   char *file_name = argv[0];
-
-  
-  printf ("FILE_NAME: %s\n", file_name);
-  printf ("ARGS: <<%s>>\n", args);
-  printf ("ARGV[0]: <<%s>>\n", argv[0]);
-  //if_.esp -= 8;
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
@@ -102,87 +97,54 @@ start_process (void *args_)
   if (!success) 
     thread_exit ();
 
-  //TODO - comments
+  /* Set up array of pointers to ARGV elements. */
   int **argv_addr = (int **) malloc (argc * sizeof (int *));
-  printf ("INITIAL ESP: %x\n", if_.esp);
-  int total_argv_len = 0;
 
+  /* Push ARGV on stack in reverse order. */
+  int total_argv_len = 0;
   int i;
   for (i = argc - 1; i >= 0; i--)
     {
-      printf ("I: %i, S: %s\n", i, argv[i]);
       int arg_len = strlen (argv[i]) + 1;
 
       total_argv_len += arg_len;
       if_.esp -= arg_len;
-  printf ("FIRST ITER ESP: %x\n", if_.esp);
 
       memcpy (if_.esp, argv[i], arg_len);
       argv_addr[i] = (int *) if_.esp;
-  printf ("FIRST ITER ESP 2: %x, %x\n", if_.esp, &argv[i]);
     }
  
   /* Word-align ESP. */
   if (total_argv_len % 4 != 0)
     if_.esp -= 4 - total_argv_len % 4;
-  printf ("WORD ALIGN ESP: %x\n", if_.esp);
 
   /* Push a null pointer sentinel. */
   if_.esp -= 4;
-  printf ("NULL POINTER ESP: %x\n", if_.esp);
   *((int *) if_.esp) = 0;
 
 
-  /* Push pointers to argv elements on stack. */
+  /* Push pointers to ARGV elements on stack in reverse order. */
   for (i = argc - 1; i >= 0; i--)
     {
       if_.esp -= 4;
-  printf ("SEC ITER ESP: %x\n", if_.esp);
       *((void **) if_.esp) = argv_addr[i];
     }
 
   /* Push ARGV. */
   int **addr = if_.esp;
   if_.esp -= 4;
-  printf ("ARGV ESP: %x\n", if_.esp);
   *((void **) if_.esp) = addr;
 
   /* Push ARGC. */
   if_.esp -= 4;
-  printf ("ARGC ESP: %x\n", if_.esp);
   *((int *) if_.esp) = argc;
 
-  /* Push fake return address. */
+  /* Push a fake return address. */
   if_.esp -= 4;
-  printf ("ESP: %x\n", if_.esp);
   *((int *) if_.esp) = 0;
 
-  hex_dump ((uintptr_t) if_.esp, if_.esp, 50, true);
-
-  /*if_.esp -= 8;
-  printf ("ESP: %x, PHYS_BASE: %x\n", if_.esp, PHYS_BASE);
-
-  int n = sizeof (args) / sizeof (*args);
-  int i;
-  for (i = 0; i < n; i++)
-    {
-      char *addr = if_.esp - (n - i - 1);
-      char *addr_ptr = if_.esp - (2 * n - i + 1);
-      *((char **) addr) = args[i];
-      *((char **) addr_ptr) = addr;
-      if (i == n - 1)
-        *((char ***) (if_.esp - (2 * n + 2))) = &addr_ptr;
-    }
-  *((uint8_t *) (if_.esp - n)) = 0;
-  *((char **) (if_.esp - (n + 1))) = NULL;
-  *((int *) (if_.esp - (2 * n + 3))) = n;
-  *((void **) (if_.esp - (2 * n + 4))) = 0;
-  if_.esp = if_.esp - (2 * n + 4);
-  printf ("ESP: %x, PHYS_BASE: %x\n", if_.esp, PHYS_BASE);
-
-  //hex_dump (4, if_.esp, 8, true);
-
-  printf("\nI'm a pretty butterfly\n");*/
+  //TODO - remove hex_dump
+  //hex_dump ((uintptr_t) if_.esp, if_.esp, 50, true);
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
