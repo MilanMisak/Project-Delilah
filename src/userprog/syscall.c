@@ -71,6 +71,7 @@ kill_process (void)
       //TODO - close file
     }
 
+  printf ("%s: exit(%d)\n", current->name, current->child->exitStatus);
   thread_exit ();
 }
 
@@ -123,7 +124,6 @@ h_exit (struct intr_frame *f)
   thread_current ()->child->exitStatus = status;
   /* TODO - free all the children */
 
-  printf ("%s: exit(%d)\n", thread_current ()->name, status);
   kill_process ();
 }
 
@@ -151,7 +151,11 @@ h_exec (struct intr_frame *f)
 static void
 h_wait (struct intr_frame *f)
 {
-  //TODO - wait SC
+  /* Get PID from the stack. */
+  int pid = *get_argument (1, f->esp);
+
+  int exit_status = process_wait (pid);
+  f->eax = exit_status;
 }
 
 /* The create system call. */

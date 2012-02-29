@@ -32,7 +32,7 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 tid_t
 process_execute (const char *args) 
 {
-  char *args_copy;
+  char *args_copy, *args_file_name;
   tid_t tid;
 
   /* Make a copy of ARGS.
@@ -41,16 +41,20 @@ process_execute (const char *args)
   if (args_copy == NULL)
     return TID_ERROR;
   strlcpy (args_copy, args, PGSIZE);
+  
+  /* Make a copy of ARGS to be used for getting FILE_NAME. */
+  args_file_name = palloc_get_page (0);
+  if (args_file_name == NULL)
+    return TID_ERROR;
+  strlcpy (args_file_name, args, PGSIZE);
 
   /* Get the FILE_NAME from ARGS. */
   char *save_ptr;
-  char *file_name = strtok_r (args_copy, " ", &save_ptr);
-
-  /* Restore ARGS_COPY after strtok_r. */
-  strlcpy (args_copy, args, PGSIZE);
+  char *file_name = strtok_r (args_file_name, " ", &save_ptr);
 
   /* Create a new thread to execute FILE_NAME. */
   struct child *child = malloc (sizeof (struct child));
+
   tid = thread_create (file_name, PRI_DEFAULT, start_process, args_copy, child);
  
   /* Putting child in current processes' children list. */
@@ -177,11 +181,11 @@ process_wait (tid_t child_tid UNUSED)
       struct child *c = list_entry (e, struct child, elem);
 
       if (c->tid == child_tid) 
-      {
+        {
           sema_down (&c->wait);
           sema_up (&c->wait);
           return c->exitStatus;
-      }
+        }
     }
   return -1;
 }
