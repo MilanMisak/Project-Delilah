@@ -44,7 +44,7 @@ process_execute (const char *args)
 
   /* Get the FILE_NAME from ARGS. */
   char *save_ptr;
-  char *file_name = strtok_r (args_copy, " ", &save_ptr);
+  char *file_name = strtok_r (args, " ", &save_ptr);
 
   /* Create a new thread to execute FILE_NAME. */
   struct child *child = malloc (sizeof (struct child));
@@ -74,9 +74,11 @@ start_process (void *args_)
   char *token, *save_ptr; 
   int argc = 0;
   char **argv = (char **) malloc ((strlen (args) + 1) * sizeof (char));
+  printf ("SL: %i\n", strlen (args));
   for (token = strtok_r (args, " ", &save_ptr); token != NULL;
        token = strtok_r (NULL, " ", &save_ptr))
     {
+      printf ("BOOOOOOOM");
       argv[argc++] = token;
       printf ("ARGV: <<%s>>\n", argv[argc - 1]);
     }
@@ -100,9 +102,9 @@ start_process (void *args_)
   if (!success) 
     thread_exit ();
 
+  //TODO - comments
   int **argv_addr = (int **) malloc (argc * sizeof (int *));
-  void *esp = if_.esp;
-  printf ("ESP: %i, %x, %i\n", *((int *) esp), *((int *) esp), if_.esp);
+  printf ("INITIAL ESP: %x\n", if_.esp);
   int total_argv_len = 0;
 
   int i;
@@ -112,41 +114,50 @@ start_process (void *args_)
       int arg_len = strlen (argv[i]) + 1;
 
       total_argv_len += arg_len;
-      esp -= arg_len;
+      if_.esp -= arg_len;
+  printf ("FIRST ITER ESP: %x\n", if_.esp);
 
-      memcpy (esp, argv[i], arg_len);
-      argv_addr[i] = (int *) esp;
+      memcpy (if_.esp, argv[i], arg_len);
+      argv_addr[i] = (int *) if_.esp;
+  printf ("FIRST ITER ESP 2: %x, %x\n", if_.esp, &argv[i]);
     }
  
   /* Word-align ESP. */
   if (total_argv_len % 4 != 0)
-    esp -= 4 - total_argv_len % 4;
+    if_.esp -= 4 - total_argv_len % 4;
+  printf ("WORD ALIGN ESP: %x\n", if_.esp);
 
   /* Push a null pointer sentinel. */
-  esp -= 4;
-  *((int *) esp) = 0;
+  if_.esp -= 4;
+  printf ("NULL POINTER ESP: %x\n", if_.esp);
+  *((int *) if_.esp) = 0;
 
 
   /* Push pointers to argv elements on stack. */
   for (i = argc - 1; i >= 0; i--)
     {
-      esp -= 4;
-      *((void **) esp) = argv[i];
+      if_.esp -= 4;
+  printf ("SEC ITER ESP: %x\n", if_.esp);
+      *((void **) if_.esp) = argv_addr[i];
     }
 
   /* Push ARGV. */
-  int **addr = esp;
-  esp -= 4;
-  *((void **) esp) = addr;
+  int **addr = if_.esp;
+  if_.esp -= 4;
+  printf ("ARGV ESP: %x\n", if_.esp);
+  *((void **) if_.esp) = addr;
 
   /* Push ARGC. */
-  esp -= 4;
-  *((int *) esp) = argc;
+  if_.esp -= 4;
+  printf ("ARGC ESP: %x\n", if_.esp);
+  *((int *) if_.esp) = argc;
 
   /* Push fake return address. */
-  esp -= 4;
-  *((int *) esp) = 0;
+  if_.esp -= 4;
+  printf ("ESP: %x\n", if_.esp);
+  *((int *) if_.esp) = 0;
 
+  hex_dump ((uintptr_t) if_.esp, if_.esp, 50, true);
 
   /*if_.esp -= 8;
   printf ("ESP: %x, PHYS_BASE: %x\n", if_.esp, PHYS_BASE);
@@ -205,10 +216,8 @@ process_wait (tid_t child_tid UNUSED)
 
       if (c->tid == child_tid) 
       {
-          printf ("BOOM");
           sema_down (&c->wait);
           sema_up (&c->wait);
-          printf ("BOOM2");
           return c->exitStatus;
       }
     }

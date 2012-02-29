@@ -46,7 +46,6 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f) 
 {
-  printf("HANDLER BOOOOM");
   /* Get ESP and EAX from the interrupt frame. */
   void *esp = f->esp;
   uint32_t *eax = &(f->eax);
@@ -68,7 +67,8 @@ kill_process (void)
   /* Close files open by this process. */
   struct thread *current = thread_current ();
   struct list_elem *e;
-  while ((e = list_begin (&current->open_files)) != NULL)
+  for (e = list_begin (&current->open_files);
+       e != list_end (&current->open_files); e = list_next (e))
     {
       struct open_file *of = list_entry (e, struct open_file, elem);
       //TODO - close file
@@ -113,7 +113,6 @@ put_user (uint8_t *udst, uint8_t byte) {
 static void
 h_halt (void *esp, uint32_t *return_value)
 {
-  printf ("HALTBOOM");
   shutdown_power_off ();
 }
 
