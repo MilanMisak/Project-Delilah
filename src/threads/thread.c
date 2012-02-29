@@ -15,7 +15,6 @@
 #include "threads/vaddr.h"
 #include "devices/timer.h"
 #ifdef USERPROG
-#include "lib/user/syscall.h"
 #include "userprog/process.h"
 #endif
 

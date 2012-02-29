@@ -244,12 +244,28 @@ h_write (void *esp, uint32_t *return_value)
   }
   else if (fd == STDOUT_FILENO)
   {
-    //TODO - break up larger buffers?
-    lock_acquire (&filesys_lock);
-    putbuf (buffer, size);
-    lock_release (&filesys_lock);
+    int buffer_max_length = 256;
 
-    *return_value = size;
+    lock_acquire (&filesys_lock);
+    if (size <= buffer_max_length)
+      {
+        putbuf (buffer, size);
+        *return_value = size;
+      }
+    else
+      {
+        /* Break up larger buffers into chunks of 256 bytes. */
+        int bytes_written = 0;
+        while (size > buffer_max_length)
+          {
+            putbuf (buffer + bytes_written, buffer_max_length);
+            size -= buffer_max_length;
+            bytes_written += buffer_max_length;
+          }
+        putbuf (buffer + bytes_written, size);
+        *return_value = bytes_written;
+      }
+    lock_release (&filesys_lock);
   }
   else
   {
