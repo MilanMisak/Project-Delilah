@@ -30,19 +30,38 @@ Craig Ellis <ce710@doc.ic.ac.uk>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+
 ---- ALGORITHMS ----
 
 >> A2: Briefly describe how you implemented argument parsing.  How do
 >> you arrange for the elements of argv[] to be in the right order?
 >> How do you avoid overflowing the stack page?
 
+When process_execute() is called, with the full string of arguments, two copies
+are made, and tokenised (both become corrupted by strtok_r(). The first can't
+simply be reset to the full argument string, as it is used to retrieve the file
+name from the first token, and a reset would also reset the file name). Next,
+start_process() is called, which takes in a copy of the original string of
+arguments, and tokenises them again (TODO: why?), and stores them, in order, in the array argv[]. The structures that the thread requires are initialised, and then writing to the program's executable file is restricted.
+Finally, the stack is initialised with each argument in the correct order (made
+easier with the array of arguments), and all other information that the process
+expects to be there, in order to start for the first time. A simulated return
+from an interrupt then forces the thread to start.
+
+TODO: Milan, how do we avoid overflowing the stack page?
+
+
 ---- RATIONALE ----
 
 >> A3: Why does Pintos implement strtok_r() but not strtok()?
 
+TODO: Anyone (but i suppose I could :P)
+
 >> A4: In Pintos, the kernel separates commands into a executable name
 >> and arguments.  In Unix-like systems, the shell does this
 >> separation.  Identify at least two advantages of the Unix approach.
+
+TODO: Anyone (but I suppose I could :P)
 
                  SYSTEM CALLS
                  ============
@@ -53,14 +72,44 @@ Craig Ellis <ce710@doc.ic.ac.uk>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+Added to struct thread:
+
+    bool orphan;                        /* Indicates whether the process'
+                                           parent is dead */
+    struct list children;               /* List of the process' children */
+    struct list open_files;             /* List of open files by this process. */
+
+
+New structs:
+
+struct child
+  {
+    struct list_elem elem;
+    tid_t tid;
+    int exitStatus;
+    struct semaphore wait;
+  };
+
+struct open_file
+  {
+    int fd;                             /* File descriptor. */
+    struct file *file;                  /* Pointer to the file struct. */
+    struct list_elem elem;              /* List element. */
+  };
+
+
 >> B2: Describe how file descriptors are associated with open files.
 >> Are file descriptors unique within the entire OS or just within a
 >> single process?
+
+TODO: Jack or Milan
 
 ---- ALGORITHMS ----
 
 >> B3: Describe your code for reading and writing user data from the
 >> kernel.
+
+TODO: Jack or Milan
 
 >> B4: Suppose a system call causes a full page (4,096 bytes) of data
 >> to be copied from user space into the kernel.  What is the least
@@ -69,8 +118,12 @@ Craig Ellis <ce710@doc.ic.ac.uk>
 >> for a system call that only copies 2 bytes of data?  Is there room
 >> for improvement in these numbers, and how much?
 
+TODO: Jack or Milan
+
 >> B5: Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
+
+TODO: Jack (I think)
 
 >> B6: Any access to user program memory at a user-specified address
 >> can fail due to a bad pointer value.  Such accesses must cause the
@@ -86,12 +139,16 @@ Craig Ellis <ce710@doc.ic.ac.uk>
 >> paragraphs, describe the strategy or strategies you adopted for
 >> managing these issues.  Give an example.
 
+TODO: Jack (I think)
+
 ---- SYNCHRONIZATION ----
 
 >> B7: The "exec" system call returns -1 if loading the new executable
 >> fails, so it cannot return before the new executable has completed
 >> loading.  How does your code ensure this?  How is the load
 >> success/failure status passed back to the thread that calls "exec"?
+
+TODO: Jack or Milan
 
 >> B8: Consider parent process P with child process C.  How do you
 >> ensure proper synchronization and avoid race conditions when P
@@ -100,16 +157,24 @@ Craig Ellis <ce710@doc.ic.ac.uk>
 >> terminates without waiting, before C exits?  After C exits?  Are
 >> there any special cases?
 
+TODO: Jack
+
 ---- RATIONALE ----
 
 >> B9: Why did you choose to implement access to user memory from the
 >> kernel in the way that you did?
 
+TODO: Jack (I think)
+
 >> B10: What advantages or disadvantages can you see to your design
 >> for file descriptors?
 
+TODO: Jack (I think)
+
 >> B11: The default tid_t to pid_t mapping is the identity mapping.
 >> If you changed it, what advantages are there to your approach?
+
+TODO: Jack or Milan
 
                SURVEY QUESTIONS
                ================
