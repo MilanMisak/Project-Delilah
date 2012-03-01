@@ -99,7 +99,10 @@ start_process (void *args_)
 
   /* If load failed, quit. */
   if (!success) 
-    thread_exit ();
+    {
+      printf ("%s: exit(%d)\n", file_name, -1);
+      thread_exit ();
+    }
 
   /* Set up array of pointers to ARGV elements. */
   int **argv_addr = (int **) malloc (argc * sizeof (int *));
