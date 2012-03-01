@@ -424,9 +424,11 @@ thread_exit (void)
   ASSERT (!intr_context ());
 
 #ifdef USERPROG
-  struct file *executable = filesys_open (thread_current()->name);
-  if (executable != NULL)
-    file_allow_write (executable);
+  /* Re-enable writing to this process's executable file. */
+  enum intr_level old_level = intr_disable ();
+  file_close (thread_current ()->executable_file);
+  intr_set_level (old_level);
+
   process_exit ();
 #endif
 

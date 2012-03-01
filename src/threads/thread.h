@@ -121,6 +121,9 @@ struct thread
     struct list children;               /* List of the process' children */
 
     struct list open_files;             /* List of open files by this process. */
+
+    struct file *executable_file;       /* Program (executable) file of
+                                           this process. */
 #endif
 
     /* Owned by thread.c. */
