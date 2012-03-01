@@ -146,19 +146,22 @@ page_fault (struct intr_frame *f)
   /* Determine cause. */
   not_present = (f->error_code & PF_P) == 0;
   write = (f->error_code & PF_W) != 0;
-  user = (f->error_code & PF_U) != 0;
+  user = (f->error_code & PF_U) != 0; 
 
   /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
-  printf ("Page fault at %p: %s error %s page in %s context.\n",
+  /* printf ("Page fault at %p: %s error %s page in %s context.\n",
           fault_addr,
           not_present ? "not present" : "rights violation",
           write ? "writing" : "reading",
           user ? "user" : "kernel");
-  kill (f);
+  kill (f);*/ 
 
-  /* asm ("movl %%eax, %%ebx; movl $0xffffffff, %%eax; jmp %%ebx" 
-       : : : "eax", "ebx" ); */
+  f->eip = f->eax;
+  f->eax = 0xffffffff;
+ 
+  printf ("%s: exit(%d)\n", thread_current ()->name, -1);
+  thread_exit ();
 }
 
