@@ -192,7 +192,9 @@ process_wait (tid_t child_tid UNUSED)
         {
           sema_down (&c->wait);
           sema_up (&c->wait);
-          return c->exitStatus;
+          int return_value = c->exitStatus;
+          c->exitStatus = -1;
+          return return_value;
         }
     }
   return -1;
