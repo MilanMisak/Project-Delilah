@@ -1,6 +1,7 @@
 #include "userprog/syscall.h"
 #include <stdio.h>
 #include <syscall-nr.h>
+#include "devices/input.h"
 #include "devices/shutdown.h"
 #include "filesys/file.h"
 #include "filesys/filesys.h"
@@ -277,6 +278,13 @@ h_read (struct intr_frame *f)
   if (fd == STDIN_FILENO)
     {
 //TODO - read
+      int i;
+      for (i = 0; i < size; i++)
+        {
+          *(buffer + i) = input_getc ();
+        }
+
+      f->eax = size;
     }
   else if (fd == STDOUT_FILENO)
     {
@@ -292,7 +300,14 @@ h_read (struct intr_frame *f)
           /* Error: could not find the open file with given FD. */
           kill_process ();
         }
-//TODO - read
+
+      /* Try to read SIZE bytes from FILE to BUFFER. */
+      lock_acquire (&filesys_lock);
+      int bytes_read = file_read (file, buffer, size);
+      lock_release (&filesys_lock);
+
+      /* Return how many bytes were actually read. */
+      f->eax = bytes_read;
     }
 }
 
@@ -351,7 +366,14 @@ h_write (struct intr_frame *f)
           /* Error: could not find the open file with given FD. */
           kill_process ();
         }
-    //TODO - writing to files
+
+      /* Try to write SIZE bytes from BUFFER to FILE. */
+      lock_acquire (&filesys_lock);  
+      int bytes_written = file_write (file, buffer, size);
+      lock_release (&filesys_lock);  
+
+      /* Return how many bytes were actually written. */
+      f->eax = bytes_written;
     }
 }
 
@@ -359,8 +381,15 @@ h_write (struct intr_frame *f)
 static void
 h_seek (struct intr_frame *f)
 {
-  /* Get FD, BUFFER and SIZE from the stack. */
+  /* Get FD and POSITION from the stack. */
   int fd = *get_argument (1, f->esp);
+  int position = *get_argument (2, f->esp);
+
+  if (position < 0)
+    {
+      /* Error: seeking with a negative position. */
+      kill_process ();
+    }
   
   /* Get FILE with given FD from the current thread. */
   struct file *file = thread_get_open_file (fd);
@@ -369,7 +398,10 @@ h_seek (struct intr_frame *f)
       /* Error: could not find the open file with given FD. */
       kill_process ();
     }
-  //TODO - seek SC
+
+  lock_acquire (&filesys_lock);
+  file_seek (file, position);
+  lock_release (&filesys_lock);
 }
 
 /* The tell system call. */
@@ -386,7 +418,13 @@ h_tell (struct intr_frame *f)
       /* Error: could not find the open file with given FD. */
       kill_process ();
     }
-  //TODO - tell SC
+
+  lock_acquire (&filesys_lock);
+  int position = file_tell (file);
+  lock_release (&filesys_lock);
+
+  /* Return the position of the next byte to be read or written. */
+  f->eax = position;
 }
 
 /* The close system call. */
