@@ -152,10 +152,10 @@ h_exec (struct intr_frame *f)
 
   f->eax = tid;
   if (tid == TID_ERROR)
-  {
-    /* Error: process cannot be executed. */
-    f->eax = -1;
-  }
+    {
+      /* Process cannot be executed. */
+      f->eax = -1;
+    }
 }
 
 /* The wait system call handler. */
