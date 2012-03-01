@@ -55,13 +55,22 @@ TODO: Milan, how do we avoid overflowing the stack page?
 
 >> A3: Why does Pintos implement strtok_r() but not strtok()?
 
-TODO: Anyone (but i suppose I could :P)
+From the man page of strtok(): "The strtok() function uses a static buffer
+while parsing, so it's not thread safe."
+This means that there is a single, static buffer which strtok() operates on,
+and if multiple threads were to access this buffer at the same time, its value
+is likely to be corrupted.
+
 
 >> A4: In Pintos, the kernel separates commands into a executable name
 >> and arguments.  In Unix-like systems, the shell does this
 >> separation.  Identify at least two advantages of the Unix approach.
 
-TODO: Anyone (but I suppose I could :P)
+1. The kernel can schedule the tokenising of the arguments as though it were another thread, with priority, etc, in case something else with higher priority wants to do stuff?
+2. Kernel... has to do less? Like, the memory that the kernel needs is less? Iunnolol. :D
+
+TODO: see if my wild guesses are right, and write this all nicely and everything :)
+
 
                  SYSTEM CALLS
                  ============
