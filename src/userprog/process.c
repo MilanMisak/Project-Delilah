@@ -104,6 +104,11 @@ start_process (void *args_)
       thread_exit ();
     }
 
+  /* Deny writing to this program's executable file. */
+  struct file *executable = filesys_open (file_name);
+  file_deny_write (executable);
+  thread_add_open_file (executable);
+
   /* Set up array of pointers to ARGV elements. */
   int **argv_addr = (int **) malloc (argc * sizeof (int *));
 

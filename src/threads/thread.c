@@ -15,6 +15,8 @@
 #include "threads/vaddr.h"
 #include "devices/timer.h"
 #ifdef USERPROG
+#include "filesys/file.h"
+#include "filesys/filesys.h"
 #include "userprog/process.h"
 #endif
 
@@ -422,6 +424,9 @@ thread_exit (void)
   ASSERT (!intr_context ());
 
 #ifdef USERPROG
+  struct file *executable = filesys_open (thread_current()->name);
+  if (executable != NULL)
+    file_allow_write (executable);
   process_exit ();
 #endif
 

@@ -65,15 +65,7 @@ kill_process (void)
 {
   //TODO - release locks and such
 
-  /* Close files open by this process. */
   struct thread *current = thread_current ();
-  struct list_elem *e;
-  for (e = list_begin (&current->open_files);
-       e != list_end (&current->open_files); e = list_next (e))
-    {
-      struct open_file *of = list_entry (e, struct open_file, elem);
-      //TODO - close file
-    }
 
   printf ("%s: exit(%d)\n", current->name, current->child->exitStatus);
   thread_exit ();

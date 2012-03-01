@@ -158,7 +158,7 @@ page_fault (struct intr_frame *f)
           user ? "user" : "kernel");
   kill (f);*/ 
 
-  f->eip = f->eax;
+  f->eip = (void *) f->eax;
   f->eax = 0xffffffff;
  
   printf ("%s: exit(%d)\n", thread_current ()->name, -1);
