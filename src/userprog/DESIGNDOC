@@ -167,6 +167,17 @@ files are used.
 >> for a system call that only copies 2 bytes of data?  Is there room
 >> for improvement in these numbers, and how much?
 
+The method pagedir_get_page() is called inside every install_page(), which is
+called in load_segment(). This is called once for each loadable segment of data
+to be loaded. A segment is TODO, and therefore a full page requires TODO.
+
+Had we used the second method for safe page access (assuming memory is safe,
+and handling any page faults as they occur), we would need to access the page
+table significantly less, since we wouldn't need to look up whether or not any
+pointers were in the correct range.
+
+
+
 TODO: Jack or Milan
 
 
