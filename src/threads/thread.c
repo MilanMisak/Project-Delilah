@@ -809,9 +809,8 @@ init_thread (struct thread *t, const char *name, int priority,
 
 #ifdef USERPROG
   list_init (&t->open_files);
-#endif
 
-#ifdef USERPROG
+  //TODO - WTF Jack. Also proccess? Really?
   /* Set up proccess things */
   list_init (&t->children);
   t->orphan = false;

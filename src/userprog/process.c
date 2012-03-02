@@ -61,6 +61,8 @@ process_execute (const char *args)
   child->tid = tid;
   child->exitStatus = -1;
   sema_init (&child->wait, 0);
+  sema_init (&child->loading_sema, 0);
+  child->loaded_correctly = false;
   list_push_back (&thread_current ()->children, &child->elem);
 
   if (tid == TID_ERROR)
@@ -101,6 +103,7 @@ start_process (void *args_)
   if (!success) 
     {
       printf ("%s: exit(%d)\n", file_name, -1);
+      sema_up (&thread_current ()->child->loading_sema);
       thread_exit ();
     }
 
@@ -157,6 +160,9 @@ start_process (void *args_)
 
   //TODO - remove hex_dump
   //hex_dump ((uintptr_t) if_.esp, if_.esp, 50, true);
+
+  thread_current ()->child->loaded_correctly = true;
+  sema_up (&thread_current ()->child->loading_sema);
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in

@@ -130,12 +130,20 @@ struct thread
     unsigned magic;                     /* Detects stack overflow. */
   };
 
+//TODO - Jack: this needs commenting
 struct child
   {
     struct list_elem elem;
     tid_t tid;
     int exitStatus;
     struct semaphore wait;
+    
+    struct semaphore loading_sema;      /* Semaphore to announce the end of
+                                           process loading (both successful or
+                                           one which ends with an error). */
+
+    bool loaded_correctly;              /* True, if process was loaded
+                                           correctly. False otherwise. */
   };
 
 #ifdef USERPROG

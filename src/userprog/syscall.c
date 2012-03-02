@@ -147,7 +147,31 @@ h_exec (struct intr_frame *f)
     {
       /* Process cannot be executed. */
       f->eax = -1;
+      return;
     }
+
+  /* Wait for the new process to finish loading. */
+  struct thread *current = thread_current ();
+  struct list_elem *e;
+
+  for (e = list_begin (&current->children);
+       e != list_end (&current->children); e = list_next (e))
+    {
+      struct child *child = list_entry (e, struct child, elem);
+      if (child->tid == tid)
+        {
+          sema_down (&child->loading_sema);
+          if (! child->loaded_correctly)
+            {
+              /* Child process didn't load correctly. */
+              f->eax = -1;
+            }
+          return;
+        }
+    }
+      
+  /* Child process with this TID not found. */
+  f->eax = -1;
 }
 
 /* The wait system call handler. */
