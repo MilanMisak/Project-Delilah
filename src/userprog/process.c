@@ -45,7 +45,10 @@ process_execute (const char *args)
   /* Make a copy of ARGS to be used for getting FILE_NAME. */
   args_file_name = palloc_get_page (0);
   if (args_file_name == NULL)
-    return TID_ERROR;
+    {
+      palloc_free_page (args_copy);
+      return TID_ERROR;
+    }
   strlcpy (args_file_name, args, PGSIZE);
 
   /* Get the FILE_NAME from ARGS. */
@@ -54,8 +57,15 @@ process_execute (const char *args)
 
   /* Create a new thread to execute FILE_NAME. */
   struct child *child = malloc (sizeof (struct child));
+  if (child == NULL) 
+    {
+      palloc_free_page (args_copy);
+      palloc_free_page (args_file_name);
+      return TID_ERROR;
+    }
 
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, args_copy, child);
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, args_copy,
+                       child);
  
   /* Putting child in current processes' children list. */
   child->tid = tid;
@@ -107,6 +117,8 @@ start_process (void *args_)
   if (!success) 
     {
       printf ("%s: exit(%d)\n", file_name, -1);
+
+      free (argv);
       sema_up (&thread_current ()->child->loading_sema);
       thread_exit ();
     }
@@ -161,9 +173,6 @@ start_process (void *args_)
   /* Push a fake return address. */
   if_.esp -= 4;
   *((int *) if_.esp) = 0;
-
-  //TODO - remove hex_dump
-  //hex_dump ((uintptr_t) if_.esp, if_.esp, 50, true);
 
   free (argv);
   free (argv_addr);

@@ -53,8 +53,7 @@ static void
 syscall_handler (struct intr_frame *f) 
 {
   /* Get the system call number from the stack. */
-  //TODO - need to check that ESP is valid before dereferencing
-  int syscall_number = *((int *) f->esp);
+  int syscall_number = get_user (f->esp);
 
   /* Call the system call handler. */
   (*handlers[syscall_number]) (f);
@@ -64,8 +63,6 @@ syscall_handler (struct intr_frame *f)
 static void
 kill_process (void)
 {
-  //TODO - release locks and such
-
   struct thread *current = thread_current ();
 
   printf ("%s: exit(%d)\n", current->name, current->child->exitStatus);
@@ -79,7 +76,6 @@ static int
   int *arg = (int *) esp + n;
   if (get_user ((uint8_t *) arg) == -1)
     kill_process ();
-  // TODO - need to check that the pointer is valid and safe
   return arg;
 }
 
@@ -134,7 +130,6 @@ h_exit (struct intr_frame *f)
   f->eax = status;
   
   thread_current ()->child->exitStatus = status;
-  /* TODO - free all the children */
 
   kill_process ();
 }
@@ -145,7 +140,6 @@ h_exec (struct intr_frame *f)
 {
   /* Get CMD_LINE from the stack. */
   char *cmd_line = (char *) *get_argument (1, f->esp);
-  //TODO - check that cmd_line is safe
 
   lock_acquire (&filesys_lock);
   tid_t tid = process_execute (cmd_line);
@@ -205,7 +199,6 @@ h_create (struct intr_frame *f)
       /* Error: FILE cannot be NULL. */
       kill_process ();
     }
-  //TODO - check file is safe
   int initial_size = *get_argument (2, f->esp);
 
   /* Return TRUE if file gets created, FALSE otherwise. */
@@ -225,7 +218,6 @@ h_remove (struct intr_frame *f)
       /* Error: FILE cannot be NULL. */
       kill_process ();
     }
-  //TODO - check file is safe
 
   /* Return TRUE if file gets removed, FALSE otherwise. */
   lock_acquire (&filesys_lock);
@@ -244,7 +236,6 @@ h_open (struct intr_frame *f)
       /* Error: FILE cannot be NULL. */
       kill_process ();
     }
-  //TODO - check file is safe
  
   /* Try opening the file. */
   lock_acquire (&filesys_lock);
@@ -456,6 +447,5 @@ static void
 h_close (struct intr_frame *f)
 {
   int fd = *get_argument (1, f->esp);
-  //TODO - check that fd is safe
   thread_close_open_file (fd);
 }
