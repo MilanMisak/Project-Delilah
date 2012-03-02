@@ -45,7 +45,10 @@ process_execute (const char *args)
   /* Make a copy of ARGS to be used for getting FILE_NAME. */
   args_file_name = palloc_get_page (0);
   if (args_file_name == NULL)
-    return TID_ERROR;
+    {
+      palloc_free_page (args_copy);
+      return TID_ERROR;
+    }
   strlcpy (args_file_name, args, PGSIZE);
 
   /* Get the FILE_NAME from ARGS. */
@@ -56,6 +59,8 @@ process_execute (const char *args)
   struct child *child = malloc (sizeof (struct child));
   if (child == NULL) 
     {
+      palloc_free_page (args_copy);
+      palloc_free_page (args_file_name);
       return TID_ERROR;
     }
 
@@ -88,17 +93,16 @@ start_process (void *args_)
   struct intr_frame if_;
   bool success;
 
-  /* Get ARGV and FILE_NAME from ARGS. */
   char *token, *save_ptr; 
   int argc = 0;
 
+  /* Get ARGV and FILE_NAME from ARGS. */
   char **argv = (char **) malloc ((strlen (args) + 1) * sizeof (char));
   for (token = strtok_r (args, " ", &save_ptr); token != NULL;
        token = strtok_r (NULL, " ", &save_ptr))
     {
       argv[argc++] = token;
     }
-
   char *file_name = argv[0];
 
   /* Initialize interrupt frame and load executable. */
@@ -112,6 +116,8 @@ start_process (void *args_)
   if (!success) 
     {
       printf ("%s: exit(%d)\n", file_name, -1);
+
+      free (argv);
       sema_up (&thread_current ()->child->loading_sema);
       thread_exit ();
     }
@@ -167,9 +173,6 @@ start_process (void *args_)
   if_.esp -= 4;
   *((int *) if_.esp) = 0;
 
-  //TODO - remove hex_dump
-  //hex_dump ((uintptr_t) if_.esp, if_.esp, 50, true);
-
   free (argv);
   free (argv_addr);
 
@@ -200,6 +203,7 @@ process_wait (tid_t child_tid UNUSED)
 {
   struct thread *current = thread_current ();
   struct list_elem *e;
+
   for (e = list_begin (&current->children); 
        e != list_end (&current->children);
        e = list_next (e))
@@ -214,7 +218,7 @@ process_wait (tid_t child_tid UNUSED)
           int return_value = c->exitStatus;
           c->exitStatus = -1;
            
-          /*Try to free the child struct */
+          /* Try to free the child struct. */
           if (sema_try_down (&c->free_sema)) 
             {
               list_remove (e);
