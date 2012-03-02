@@ -167,15 +167,16 @@ files are used.
 >> for a system call that only copies 2 bytes of data?  Is there room
 >> for improvement in these numbers, and how much?
 
-A page table check is made for every byte loaded into the kernel, to ensure
-that it is not out of bounds. Therefore, there will be 4,096 inspections in
-the first instance, and only 2 in the second.
+Since we have implemented the second of the two recommended ways of checking
+safe memory (simply waiting for a page fault to tell us if a memory access
+is unsafe), there are relatively few page table inspections. The method
+pagedir_get_page, for example, is only called when a new page is loaded into
+the kernel, indirectly inside load_segment(). It is called once for each
+loadable segment, TODO
 
-There are many ways to improve on this number. For example, had we used the
-second method for safe page access (assuming memory is safe, and handling any
-page faults as they occur), we would need to access the page table
-significantly less, since we wouldn't need to look up whether or not any
-pointers were in the correct range.
+There is little room for improvement, since the page faults will handle most of
+the safe memory access, and page table accesses outside of the aforementioned
+load_segment() calls are few.
 
 TODO: Jack or Milan
 
