@@ -284,6 +284,12 @@ h_read (struct intr_frame *f)
   /* Get FD, BUFFER and SIZE from the stack. */
   int fd = *get_argument (1, f->esp);
   char *buffer = (char *) *get_argument (2, f->esp);
+
+  /* Check for bad ptr */
+  if (get_user (buffer) == -1)
+    kill_process ();
+      
+
   if (buffer == NULL)
     {
       /* Error: BUFFER cannot be NULL. */
