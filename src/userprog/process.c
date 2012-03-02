@@ -45,7 +45,10 @@ process_execute (const char *args)
   /* Make a copy of ARGS to be used for getting FILE_NAME. */
   args_file_name = palloc_get_page (0);
   if (args_file_name == NULL)
-    return TID_ERROR;
+    {
+      palloc_free_page (args_copy);
+      return TID_ERROR;
+    }
   strlcpy (args_file_name, args, PGSIZE);
 
   /* Get the FILE_NAME from ARGS. */
@@ -56,6 +59,8 @@ process_execute (const char *args)
   struct child *child = malloc (sizeof (struct child));
   if (child == NULL) 
     {
+      palloc_free_page (args_copy);
+      palloc_free_page (args_file_name);
       return TID_ERROR;
     }
 
