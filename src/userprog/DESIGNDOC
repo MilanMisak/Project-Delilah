@@ -101,7 +101,7 @@ struct child
   {
     struct list_elem elem;
     tid_t tid;
-    int exitStatus;
+    int exit_status;
     struct semaphore wait;
 
     struct semaphore loading_sema;      /* Semaphore to announce the end of

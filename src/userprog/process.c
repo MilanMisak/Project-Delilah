@@ -69,7 +69,7 @@ process_execute (const char *args)
  
   /* Putting child in current processes' children list. */
   child->tid = tid;
-  child->exitStatus = -1;
+  child->exit_status = -1;
   sema_init (&child->wait, 0);
   sema_init (&child->loading_sema, 0);
   sema_init (&child->free_sema, 1);
@@ -215,8 +215,8 @@ process_wait (tid_t child_tid UNUSED)
           sema_down (&c->free_sema);
           sema_down (&c->wait);
           sema_up (&c->wait);
-          int return_value = c->exitStatus;
-          c->exitStatus = -1;
+          int return_value = c->exit_status;
+          c->exit_status = -1;
            
           /* Try to free the child struct. */
           if (sema_try_down (&c->free_sema)) 
