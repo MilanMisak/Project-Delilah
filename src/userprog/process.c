@@ -54,6 +54,10 @@ process_execute (const char *args)
 
   /* Create a new thread to execute FILE_NAME. */
   struct child *child = malloc (sizeof (struct child));
+  if (child == NULL) 
+    {
+      return TID_ERROR;
+    }
 
   tid = thread_create (file_name, PRI_DEFAULT, start_process, args_copy, child);
  
