@@ -192,7 +192,13 @@ happen in either order so is controlled using a semaphore.
 >> paragraphs, describe the strategy or strategies you adopted for
 >> managing these issues.  Give an example.
 
-TODO: Milan
+Each system call first tries to get its arguments from the stack and check
+that they are valid. After this happens the system calls continues execution
+if everything is fine or fails/returns an error value if not. No resources
+such as locks or buffers are allocated before all the system call arguments
+are verified.
+
+TODO: Jack, you know about get_user and page fault handling
 
 ---- SYNCHRONIZATION ----
 
@@ -252,7 +258,22 @@ it does not matter if it is slower in this case.
 >> B10: What advantages or disadvantages can you see to your design
 >> for file descriptors?
 
-TODO: Milan
+We see simplicity of the code and the fact that a process can have as many
+files open as it wants (well not really but it is not limited because of
+file descriptor design) as an advantage.
+
+There is a disadvantage of quite costly lookups for internal translation
+of file descriptors to file structs. The whole list of open files needs
+to be searched through to find a struct with a given file descriptor.
+
+We thought about this and one other possible solution came to our minds.
+If we imposed a limit on maximum number of open files by a process (which
+would be a disadvantage compared to the current state) we could easily use
+arrays and do file descriptor-based lookups in constant time by using array
+indices. However, setting this limit too low would be restricting and
+setting the limit too high would require allocating memory for the array which
+would be wasted if there were only a few open files. That is why we preferred
+our solution to this one.
 
 >> B11: The default tid_t to pid_t mapping is the identity mapping.
 >> If you changed it, what advantages are there to your approach?
