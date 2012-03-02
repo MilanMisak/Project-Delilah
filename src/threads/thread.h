@@ -128,13 +128,15 @@ struct thread
     unsigned magic;                     /* Detects stack overflow. */
   };
 
-//TODO - Jack: this needs commenting
 struct child
   {
-    struct list_elem elem;
-    tid_t tid;
-    int exit_status;
-    struct semaphore wait;
+    struct list_elem elem;              /* List element for a parents children
+                                           list.*/
+    tid_t tid;                          /* The thread's tid.*/
+
+    int exit_status;                    /* The thread's exit status, initialize
+                                           to -1. */
+    struct semaphore wait;              /* Semaphore to control waiting*/   
     
     struct semaphore loading_sema;      /* Semaphore to announce the end of
                                            process loading (both successful or
