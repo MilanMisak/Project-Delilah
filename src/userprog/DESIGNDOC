@@ -83,13 +83,14 @@ TODO: see if my wild guesses are right, and write this all nicely and everything
 
 Added to struct thread:
 
-    bool orphan;                        /* Indicates whether the process'
-                                           parent is dead */
-    struct list children;               /* List of the process' children */
-    struct list open_files;             /* List of open files by this process. */
+  bool orphan;                        /* Indicates whether the process'
+                                         parent is dead */
+  struct list children;               /* List of the process' children */
+  struct list open_files;             /* List of files opened by this
+                                         process. */
 
 
-New structs:
+New structs: (TODO: add comments)
 
 struct child
   {
