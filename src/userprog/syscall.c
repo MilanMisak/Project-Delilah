@@ -65,7 +65,7 @@ kill_process (void)
 {
   struct thread *current = thread_current ();
 
-  printf ("%s: exit(%d)\n", current->name, current->child->exitStatus);
+  printf ("%s: exit(%d)\n", current->name, current->child->exit_status);
   thread_exit ();
 }
 
@@ -129,7 +129,7 @@ h_exit (struct intr_frame *f)
   int status = *get_argument (1, f->esp);
   f->eax = status;
   
-  thread_current ()->child->exitStatus = status;
+  thread_current ()->child->exit_status = status;
 
   kill_process ();
 }
