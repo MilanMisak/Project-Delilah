@@ -112,7 +112,14 @@ struct open_file
 >> Are file descriptors unique within the entire OS or just within a
 >> single process?
 
-TODO: Jack or Milan
+When a file is opened by calling the open system call it gets added to
+current process's list of open files and assigned a unique file descriptor.
+So, file descriptors are unique within a single process only. Also, when a file
+gets closed its file descriptor is freed and it can be reused by the system
+later for another file.
+
+If the same file is opened and kept open repeatedly, each time time it gets
+a new file descriptor.
 
 ---- ALGORITHMS ----
 
@@ -158,7 +165,20 @@ TODO: Jack (I think)
 >> loading.  How does your code ensure this?  How is the load
 >> success/failure status passed back to the thread that calls "exec"?
 
-TODO: Jack or Milan
+Every thread structure has a semaphore called 'loading_sema' associated
+with it (actually it is in another struct inside each thread).
+
+When process_execute finishes and returns a new process's ID to a call
+to exec the parent thread finds the newly created process in the list
+of its children based on this PID. Then it downs new process's semaphore
+which ensures proper synchronization with the code responsible for loading
+a process.
+
+In either case when a process loads correctly or fails when trying to load
+its loading_sema is 'upped' so the parent process knows that loading finished.
+Before the semaphore is upped a boolean flag is set to indicate success or
+failure of loading making it easy for the parent process to find out the
+result.
 
 >> B8: Consider parent process P with child process C.  How do you
 >> ensure proper synchronization and avoid race conditions when P
