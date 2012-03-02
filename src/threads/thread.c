@@ -594,6 +594,8 @@ thread_donate_priority (struct thread *donating_thread)
     {
       struct donated_priority *donation =
           malloc (sizeof (struct donated_priority));
+      if (malloc == NULL) 
+        thread_exit ();
       donation->priority = donating_thread->priority;
       donation->blocking_lock = donating_thread->blocking_lock;
       list_insert_ordered (&receiving_thread->donated_priorities,

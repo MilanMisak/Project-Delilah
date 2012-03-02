@@ -257,9 +257,7 @@ TODO: Milan
 >> B11: The default tid_t to pid_t mapping is the identity mapping.
 >> If you changed it, what advantages are there to your approach?
 
-We did not change this mapping. The advantages in our approach are that
-it is faster because no calculations are needed to map one value to the
-other. As a result of this, it also cuts down on code size.
+We did not change this mapping.
 
                SURVEY QUESTIONS
                ================
