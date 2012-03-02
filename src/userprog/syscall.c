@@ -14,8 +14,9 @@
 static void syscall_handler (struct intr_frame *);
 
 static void kill_process (void);
-static int *get_argument (int n, void *esp);
 
+static int *get_argument (int n, void *esp);
+static bool is_valid_buffer (char *buffer, int size);
 static int get_user (const uint8_t *uaddr);
 
 static void h_halt     (struct intr_frame *f);
@@ -82,6 +83,14 @@ static int
   return arg;
 }
 
+/* Checks that BUFFER is valid and safe. */
+static bool
+is_valid_buffer (char *buffer, int size)
+{
+  return (get_user ((uint8_t *) buffer) != -1
+      && get_user ((uint8_t *) buffer + size - 1) != -1);
+}
+
 /* Reads a byte at user virtual address UADDR.
    UADDR must be below PHYS_BASE.
    Returns the byte value if successful, -1 if a segfault
@@ -112,7 +121,7 @@ put_user (uint8_t *udst, uint8_t byte)
 
 /* The halt system call handler. */
 static void
-h_halt (struct intr_frame *f)
+h_halt (struct intr_frame *f UNUSED)
 {
   shutdown_power_off ();
 }
@@ -284,22 +293,22 @@ h_read (struct intr_frame *f)
   /* Get FD, BUFFER and SIZE from the stack. */
   int fd = *get_argument (1, f->esp);
   char *buffer = (char *) *get_argument (2, f->esp);
+  int size = *get_argument (3, f->esp);
 
   /* Check for bad ptr */
-  if (get_user (buffer) == -1)
+  /*if (get_user ((uint8_t *) buffer) == -1
+      || get_user ((uint8_t *) buffer + size) == -1)
     kill_process ();
-      
+    */  
 
-  if (buffer == NULL)
+  if (! is_valid_buffer (buffer, size) || buffer == NULL)
     {
-      /* Error: BUFFER cannot be NULL. */
+      /* Error: BUFFER is invalid. */
       kill_process ();
     }
-  int size = *get_argument (3, f->esp);
 
   if (fd == STDIN_FILENO)
     {
-//TODO - read
       int i;
       for (i = 0; i < size; i++)
         {
@@ -340,14 +349,13 @@ h_write (struct intr_frame *f)
   /* Get FD, BUFFER and SIZE from the stack. */
   int fd = *get_argument (1, f->esp);
   char *buffer = (char *) *get_argument (2, f->esp);
+  int size = *get_argument (3, f->esp);
+  
   if (buffer == NULL)
     {
-      /* Error: BUFFER cannot be NULL. */
+      /* Error: BUFFER is invalid. */
       kill_process ();
     }
-  int size = *get_argument (3, f->esp);
-
-  //TODO - check for safe memory of buffer
 
   if (fd == STDIN_FILENO)
     {
