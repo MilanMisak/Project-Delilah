@@ -104,7 +104,8 @@ struct child
                                            list.*/
     tid_t tid;                          /* The thread's tid.*/
 
-    int exit_status;                    /* The thread's exit status, initialized                                           to -1. */
+    int exit_status;                    /* The thread's exit status, 
+                                           initialized to -1. */
     struct semaphore wait;              /* Semaphore to control waiting*/
 
     struct semaphore loading_sema;      /* Semaphore to announce the end of
@@ -218,7 +219,8 @@ are verified.
 
 When either a page fault occurs from bad memory access, or malloc fails,
 the process exits via kill_process and thread_exit. Inside process_exit 
-there are semaphores which eitherallow for freeing of some structs or flagging it for later freeing if it is being used by another process.
+there are semaphores which eitherallow for freeing of some structs or 
+flagging it for later freeing if it is being used by another process.
 
 For example, when a process tries to access an unmapped piece of memory,
 get_user is called, which will attempt to access the memory and cause a page
