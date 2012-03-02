@@ -431,16 +431,28 @@ thread_exit (void)
   /* Close all open files. */
   struct thread *current = thread_current ();
   struct list_elem *e;
-
   for (e = list_begin (&current->open_files); e != list_end (&current->open_files);
       e = list_next (e))
     {
-
       struct open_file *open_file = list_entry (e, struct open_file, elem);
       file_close (open_file->file);
       list_remove (&open_file->elem);
     }
   intr_set_level (old_level);
+
+  /* Free CHILDREN and OPEN_FILES. */
+  while (! list_empty (&current->children))
+    {
+      e = list_pop_front (&current->children);
+      struct child *child = list_entry (e, struct child, elem);
+      free (child);
+    }
+  while (! list_empty (&current->open_files))
+    {
+      e = list_pop_front (&current->open_files);
+      struct open_file *open_file = list_entry (e, struct open_file, elem);
+      free (open_file);
+    }
 
   process_exit ();
 #endif
@@ -542,6 +554,8 @@ thread_choose_priority (struct thread *t)
 void       
 thread_donate_priority (struct thread *donating_thread)
 {
+  return;
+
   if (donating_thread->blocking_lock == NULL)
     return;
 
@@ -600,7 +614,7 @@ thread_remove_priority (struct thread *t, struct lock *l)
        e = list_next (e))
     {
       struct donated_priority *d =
-      list_entry (e, struct donated_priority, priority_elem);
+          list_entry (e, struct donated_priority, priority_elem);
       
       if (d->blocking_lock == l)
         {

@@ -65,6 +65,9 @@ process_execute (const char *args)
   child->loaded_correctly = false;
   list_push_back (&thread_current ()->children, &child->elem);
 
+  /* Do a little cleanup. */
+  palloc_free_page (args_file_name);
+
   if (tid == TID_ERROR)
     palloc_free_page (args_copy);
   return tid;
@@ -160,6 +163,9 @@ start_process (void *args_)
 
   //TODO - remove hex_dump
   //hex_dump ((uintptr_t) if_.esp, if_.esp, 50, true);
+
+  free (argv);
+  free (argv_addr);
 
   thread_current ()->child->loaded_correctly = true;
   sema_up (&thread_current ()->child->loading_sema);
