@@ -167,19 +167,29 @@ files are used.
 >> for a system call that only copies 2 bytes of data?  Is there room
 >> for improvement in these numbers, and how much?
 
-The method pagedir_get_page() is called inside every install_page(), which is
-called in load_segment(). This is called once for each loadable segment of data
-to be loaded. A segment is TODO, and therefore a full page requires TODO.
+There are a couple of methods for copying data from user space into the
+kernel. The first is if it is stored as an ELF executable (possibly as
+another file type, but ELF is the only one implemented at the moment).
 
-Had we used the second method for safe page access (assuming memory is safe,
-and handling any page faults as they occur), we would need to access the page
-table significantly less, since we wouldn't need to look up whether or not any
-pointers were in the correct range.
+There is an inspection of the page table required every time a new page 
+is allocated.
 
+The least number of possible inspections with 4,096 bytes is one inspection
+in the case where a segment size for ELF in memory is greater than or equal
+to the segment size in files. The page size also needs to be large enough (
+In this case it is). The greatest number can be 4,096 number of inspections, 
+if each ELF segment is only one byte in size ie 1 inspection for each byte.
 
+For 2 bytes the least number of inspections is also 1. The greatest number
+of inspections can only be 2 (no of bytes).
 
-TODO: Jack or Milan
-
+There can be room for improvement on these numbers because segments do
+not have to be loaded into their own pages, many segments could fit inside
+a page is the page size is much greater than it. For example, if the page
+size was 2 bytes and the segment size (on file) was 1, then instead of 
+loading each segment into its own page and zeroing the other byte, they could
+share the same page. This would result in half the number of inspections
+of the page table.
 
 >> B5: Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
