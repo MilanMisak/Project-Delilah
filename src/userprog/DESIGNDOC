@@ -42,18 +42,15 @@ are made, and tokenised (both become corrupted by strtok_r(). The first can't
 simply be reset to the full argument string, as it is used to retrieve the file
 name from the first token, and a reset would also reset the file name). Next,
 start_process() is called, which takes in a copy of the original string of
-arguments, and tokenises them again (TODO: why?), and stores them, in order, in the array argv[]. The structures that the thread requires are initialised, and then writing to the program's executable file is restricted.
+arguments and tokenises them, storing them, in order, in the array argv[]. The
+structures that the thread requires are initialised, and then writing to the
+program's executable file is restricted.
 Finally, the stack is initialised with each argument in the correct order (made
 easier with the array of arguments), and all other information that the process
 expects to be there, in order to start for the first time. A simulated return
 from an interrupt then forces the thread to start.
-
-If the stack page is overflowed, this is detected as a page fault because
-magic will become corrupted. When a page fault occurs, the thread is killed.
-
-TODO: Milan, how do we avoid overflowing the stack page?
-TODO: Craig, WTF is a stack page? sort it out
-TODO: Jack, Jack is the king
+If the stack page overflows, a page fault will occur, since 'magic' will
+become corrupted. As soon as this is detected, the thread is killed.
 
 
 ---- RATIONALE ----
@@ -71,10 +68,15 @@ is likely to be corrupted.
 >> and arguments.  In Unix-like systems, the shell does this
 >> separation.  Identify at least two advantages of the Unix approach.
 
-1. The kernel can schedule the tokenising of the arguments as though it were another thread, with priority, etc, in case something else with higher priority wants to do stuff?
-2. Kernel... has to do less? Like, the memory that the kernel needs is less? Iunnolol. :D
+1. The Unix system would allow the kernel to schedule the argument tokenising
+as though it were simply another thread. This means that if a high priority
+thread was ready to run, the kernel could pause the shell's argument parsing,
+and schedule the higher priority thread to run. This means that priority
+scheduling would remain unaffected by new threads.
+2. The kernel requires less physical code, since the tokenising code would be
+in the shell instead. This would allow the kernel to load faster?
 
-TODO: see if my wild guesses are right, and write this all nicely and everything :)
+TODO: remove qestion mark
 
 
                  SYSTEM CALLS
@@ -87,6 +89,7 @@ TODO: see if my wild guesses are right, and write this all nicely and everything
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
 Added to struct thread:
+
     struct list children;               /* List of the process' children */
 
     struct list open_files;             /* List of files opened by this
@@ -142,6 +145,7 @@ a new file descriptor.
 
 TODO: Jack or Milan
 
+
 >> B4: Suppose a system call causes a full page (4,096 bytes) of data
 >> to be copied from user space into the kernel.  What is the least
 >> and the greatest possible number of inspections of the page table
@@ -150,6 +154,7 @@ TODO: Jack or Milan
 >> for improvement in these numbers, and how much?
 
 TODO: Jack or Milan
+
 
 >> B5: Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
@@ -193,6 +198,7 @@ happen in either order so is controlled using a semaphore.
 >> managing these issues.  Give an example.
 
 TODO: Milan
+
 
 ---- SYNCHRONIZATION ----
 
