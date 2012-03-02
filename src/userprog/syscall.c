@@ -295,12 +295,6 @@ h_read (struct intr_frame *f)
   char *buffer = (char *) *get_argument (2, f->esp);
   int size = *get_argument (3, f->esp);
 
-  /* Check for bad ptr */
-  /*if (get_user ((uint8_t *) buffer) == -1
-      || get_user ((uint8_t *) buffer + size) == -1)
-    kill_process ();
-    */  
-
   if (! is_valid_buffer (buffer, size) || buffer == NULL)
     {
       /* Error: BUFFER is invalid. */
