@@ -53,8 +53,7 @@ static void
 syscall_handler (struct intr_frame *f) 
 {
   /* Get the system call number from the stack. */
-  //TODO - need to check that ESP is valid before dereferencing
-  int syscall_number = *((int *) f->esp);
+  int syscall_number = get_user (f->esp);
 
   /* Call the system call handler. */
   (*handlers[syscall_number]) (f);
@@ -64,8 +63,6 @@ syscall_handler (struct intr_frame *f)
 static void
 kill_process (void)
 {
-  //TODO - release locks and such
-
   struct thread *current = thread_current ();
 
   printf ("%s: exit(%d)\n", current->name, current->child->exitStatus);

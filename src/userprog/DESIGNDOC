@@ -49,6 +49,7 @@ expects to be there, in order to start for the first time. A simulated return
 from an interrupt then forces the thread to start.
 
 TODO: Milan, how do we avoid overflowing the stack page?
+TODO: Craig, WTF is a stack page? sort it out
 
 
 ---- RATIONALE ----

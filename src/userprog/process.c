@@ -59,7 +59,8 @@ process_execute (const char *args)
       return TID_ERROR;
     }
 
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, args_copy, child);
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, args_copy,
+                       child);
  
   /* Putting child in current processes' children list. */
   child->tid = tid;
