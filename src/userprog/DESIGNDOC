@@ -76,8 +76,6 @@ scheduling would remain unaffected by new threads.
 2. The kernel requires less physical code, since the tokenising code would be
 in the shell instead. This would allow the kernel to load faster?
 
-TODO: remove qestion mark
-
 
                  SYSTEM CALLS
                  ============
