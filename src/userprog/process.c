@@ -93,17 +93,16 @@ start_process (void *args_)
   struct intr_frame if_;
   bool success;
 
-  /* Get ARGV and FILE_NAME from ARGS. */
   char *token, *save_ptr; 
   int argc = 0;
 
+  /* Get ARGV and FILE_NAME from ARGS. */
   char **argv = (char **) malloc ((strlen (args) + 1) * sizeof (char));
   for (token = strtok_r (args, " ", &save_ptr); token != NULL;
        token = strtok_r (NULL, " ", &save_ptr))
     {
       argv[argc++] = token;
     }
-
   char *file_name = argv[0];
 
   /* Initialize interrupt frame and load executable. */
@@ -204,6 +203,7 @@ process_wait (tid_t child_tid UNUSED)
 {
   struct thread *current = thread_current ();
   struct list_elem *e;
+
   for (e = list_begin (&current->children); 
        e != list_end (&current->children);
        e = list_next (e))
@@ -217,7 +217,7 @@ process_wait (tid_t child_tid UNUSED)
           int return_value = c->exitStatus;
           c->exitStatus = -1;
            
-          /*Try to free the child struct */
+          /* Try to free the child struct. */
           if (sema_try_down (&c->free_sema)) 
             {
               list_remove (e);

@@ -447,13 +447,9 @@ thread_exit (void)
       e = list_pop_front (&current->children);
       struct child *child = list_entry (e, struct child, elem);
       if (sema_try_down (&child->free_sema))
-        {
-          free (child);
-        }
+        free (child);
       else
-        {
-          sema_up (&child->free_sema);
-        }
+        sema_up (&child->free_sema);
     }
   while (! list_empty (&current->open_files))
     {
@@ -1022,17 +1018,17 @@ thread_add_open_file (struct file *file)
   int fd;
 
   if (list_empty (&current->open_files))
-  {
-    /* 0 and 1 are reserved for STDIN and STDOUT. */
-    fd = 2;
-  }
+    {
+      /* 0 and 1 are reserved for STDIN and STDOUT. */
+      fd = 2;
+    }
   else
-  {
-    struct list_elem *last_elem = list_rbegin (&current->open_files);
-    struct open_file *last_file =
-        list_entry (last_elem, struct open_file, elem);
-    fd = last_file->fd + 1;
-  }
+    {
+      struct list_elem *last_elem = list_rbegin (&current->open_files);
+      struct open_file *last_file =
+          list_entry (last_elem, struct open_file, elem);
+      fd = last_file->fd + 1;
+    }
 
   struct open_file *new_open_file =
       (struct open_file *) malloc (sizeof (struct open_file));
@@ -1060,9 +1056,7 @@ struct file
     {
       struct open_file *of = list_entry (e, struct open_file, elem);
       if (of->fd == fd)
-      {
         return of->file;
-      }
     }
   
   return NULL;
@@ -1081,10 +1075,10 @@ thread_close_open_file (int fd)
     {
       struct open_file *of = list_entry (e, struct open_file, elem);
       if (of->fd == fd)
-      {
-        list_remove (e);
-        return;
-      }
+        {
+          list_remove (e);
+          return;
+        }
     }
 }
 #endif
