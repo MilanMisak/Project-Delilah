@@ -48,8 +48,12 @@ easier with the array of arguments), and all other information that the process
 expects to be there, in order to start for the first time. A simulated return
 from an interrupt then forces the thread to start.
 
+If the stack page is overflowed, this is detected as a page fault because
+magic will become corrupted. When a page fault occurs, the thread is killed.
+
 TODO: Milan, how do we avoid overflowing the stack page?
 TODO: Craig, WTF is a stack page? sort it out
+TODO: Jack, Jack is the king
 
 
 ---- RATIONALE ----
@@ -133,7 +137,29 @@ TODO: Jack or Milan
 >> B5: Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
 
-TODO: Jack (I think)
+When a process creates a child, it mallocs a child struct and passes
+it into the thread. Both process's will contain a pointer to this struct,
+each thread has a unique pointer to its own child struct (if it is not the
+initial thread), and a list of its children.
+
+When process wait is called, it loops through the list of the process'
+children list to check if any of the structs have a matching tid. If
+this is the case, a semaphore in the child struct is downed in order to 
+wait for the thread to finish (this is upped when the child thread stops
+running). This semaphore is immediately upped in process_wait so no waiting
+occurs in the future if the parent tries to wait on this thread again.
+
+The child's exit status is then stored temporarily as the return value, and
+the exit status is set to -1 for future calls. Process_wait then returns 
+to the exit system call.
+
+When a process terminates it needs to up the semaphore that is causing its
+parent thread to block waiting (potentially). But also it needs to attempt
+to free its list of children, it can only do this if each child has exited
+which is controlled by semaphores. The child struct will either be freed
+when the parent terminates, or when the child finishes waiting, which can
+happen in either order so is controlled using a semaphore.
+
 
 >> B6: Any access to user program memory at a user-specified address
 >> can fail due to a bad pointer value.  Such accesses must cause the
@@ -149,7 +175,7 @@ TODO: Jack (I think)
 >> paragraphs, describe the strategy or strategies you adopted for
 >> managing these issues.  Give an example.
 
-TODO: Jack (I think)
+TODO: Milan
 
 ---- SYNCHRONIZATION ----
 
@@ -167,24 +193,43 @@ TODO: Jack or Milan
 >> terminates without waiting, before C exits?  After C exits?  Are
 >> there any special cases?
 
-TODO: Jack
+As described briefly previously, each process has a child struct which
+contains 2 semaphores. When P calls wait(C) before C exits, the wait 
+semaphore inside the child struct is downed (it is initialized to 0).
+When C exits then the wait semaphore is upped, you can also see how
+this will work if wait(C) is called after C exits.
+
+In each case, the free_sema will try to be downed (either in process_wait 
+or in thread_exit), it is initialized to 1, but downed inside process_wait
+to signal that P is waiting, this allows P to free the struct if it never
+waits on C. If the sema cannot be downed then the sema is upped as a signal 
+to the other case that will occur that it is safe to free the struct.
 
 ---- RATIONALE ----
 
 >> B9: Why did you choose to implement access to user memory from the
 >> kernel in the way that you did?
 
-TODO: Jack (I think)
+We implemented the safe access to user memory the way we did because
+it is faster to signal a bad pointer via a page fault than checking if the
+pointer is NULL because it utilizes the MMU. Of course it is not faster
+if the pointer is actually bad because the page fault interrupt will slow
+down the computer a lot more. But it leads to better performance in general
+because this check does not need to be performed all the time, and if the
+pointer does cause a page fault then the thread will have to exit anyway so
+it does not matter if it is slower in this case.
 
 >> B10: What advantages or disadvantages can you see to your design
 >> for file descriptors?
 
-TODO: Jack (I think)
+TODO: Milan
 
 >> B11: The default tid_t to pid_t mapping is the identity mapping.
 >> If you changed it, what advantages are there to your approach?
 
-TODO: Jack or Milan
+We did not change this mapping. The advantages in our approach are that
+it is faster because no calculations are needed to map one value to the
+other. As a result of this, it also cuts down on code size.
 
                SURVEY QUESTIONS
                ================

@@ -67,7 +67,7 @@ process_execute (const char *args)
   child->exitStatus = -1;
   sema_init (&child->wait, 0);
   sema_init (&child->loading_sema, 0);
-  sema_init (&child->free_sema, 0);
+  sema_init (&child->free_sema, 1);
   child->loaded_correctly = false;
   list_push_back (&thread_current ()->children, &child->elem);
 
@@ -208,6 +208,7 @@ process_wait (tid_t child_tid UNUSED)
 
       if (c->tid == child_tid) 
         {
+          sema_down (&c->free_sema);
           sema_down (&c->wait);
           sema_up (&c->wait);
           int return_value = c->exitStatus;
@@ -223,7 +224,6 @@ process_wait (tid_t child_tid UNUSED)
             {
               sema_up (&c->free_sema);
             }
-
           return return_value;
         }
     }
