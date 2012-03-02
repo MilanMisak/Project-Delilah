@@ -204,17 +204,16 @@ such as locks or buffers are allocated before all the system call arguments
 are verified.
 
 When either a page fault occurs from bad memory access, or malloc fails,
-the process exits. Inside process_exit there are semaphores which either
-allow for freeing of some structs or flagging it for later freeing if 
-it is being used by another process.
+the process exits via kill_process and thread_exit. Inside process_exit 
+there are semaphores which eitherallow for freeing of some structs or flagging it for later freeing if it is being used by another process.
 
 For example, when a process tries to access an unmapped piece of memory,
 get_user is called, which will attempt to access the memory and cause a page
 fault. The page fault handler will simply return to get_user, signaling the
 fauly. Process_exit is then called and any pointers to structs or lists of
 structs will be attempted to be freed or flagged for deletion. The thread
-will set its status to dying and then the thread struct itself will be freed
-my the kernel.
+will set its status to dying in the threas_exit call, and then the thread
+struct itself will be freed by the kernel in schedule().
 
 ---- SYNCHRONIZATION ----
 
