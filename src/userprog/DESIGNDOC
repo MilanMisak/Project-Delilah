@@ -169,7 +169,7 @@ files are used.
 
 There are a couple of methods for copying data from user space into the
 kernel. The first is if it is stored as an ELF executable (possibly as
-another file type).
+another file type, but ELF is the only one implemented at the moment).
 
 There is an inspection of the page table required every time a new page 
 is allocated.
@@ -190,10 +190,6 @@ size was 2 bytes and the segment size (on file) was 1, then instead of
 loading each segment into its own page and zeroing the other byte, they could
 share the same page. This would result in half the number of inspections
 of the page table.
-
-Data could also be copied by reading in from standard input or from another
-file. In this case there are no calls to pagedir_get_page() because we 
-used the page fault method of memory verification.
 
 >> B5: Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
