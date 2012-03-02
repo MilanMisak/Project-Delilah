@@ -446,9 +446,7 @@ thread_exit (void)
       e = list_pop_front (&current->children);
       struct child *child = list_entry (e, struct child, elem);
       if (sema_try_down (&child->free_sema))
-      {
         free (child);
-      }
       else
         sema_up (&child->free_sema);
     }
@@ -1077,6 +1075,7 @@ thread_close_open_file (int fd)
       struct open_file *of = list_entry (e, struct open_file, elem);
       if (of->fd == fd)
         {
+          file_close (of->file);
           list_remove (e);
           free (of);
           return;

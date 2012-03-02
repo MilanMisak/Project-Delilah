@@ -444,6 +444,10 @@ h_tell (struct intr_frame *f)
 static void
 h_close (struct intr_frame *f)
 {
+  /* Get FD from the stack. */
   int fd = *get_argument (1, f->esp);
+  
+  lock_acquire (&filesys_lock);
   thread_close_open_file (fd);
+  lock_release (&filesys_lock);
 }

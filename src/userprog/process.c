@@ -200,7 +200,7 @@ start_process (void *args_)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (tid_t child_tid UNUSED) 
+process_wait (tid_t child_tid) 
 {
   struct thread *current = thread_current ();
   struct list_elem *e;
@@ -226,9 +226,7 @@ process_wait (tid_t child_tid UNUSED)
               free (c);
             }
           else 
-            {
-              sema_up (&c->free_sema);
-            }
+            sema_up (&c->free_sema);
           return return_value;
         }
     }
