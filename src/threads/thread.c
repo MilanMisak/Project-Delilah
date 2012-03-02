@@ -431,8 +431,9 @@ thread_exit (void)
   /* Close all open files. */
   struct thread *current = thread_current ();
   struct list_elem *e;
-  for (e = list_begin (&current->open_files); e != list_end (&current->open_files);
-      e = list_next (e))
+  for (e = list_begin (&current->open_files); 
+       e != list_end (&current->open_files);
+       e = list_next (e))
     {
       struct open_file *open_file = list_entry (e, struct open_file, elem);
       file_close (open_file->file);
@@ -445,7 +446,14 @@ thread_exit (void)
     {
       e = list_pop_front (&current->children);
       struct child *child = list_entry (e, struct child, elem);
-      free (child);
+      if (sema_try_down (&child->free_sema))
+        {
+          free (child);
+        }
+      else
+        {
+          sema_up (&child->free_sema);
+        }
     }
   while (! list_empty (&current->open_files))
     {
@@ -837,10 +845,9 @@ init_thread (struct thread *t, const char *name, int priority,
 #ifdef USERPROG
   list_init (&t->open_files);
 
-  //TODO - WTF Jack. Also proccess? Really?
+  //TODO - WTF Milan, WTF YOU TALKING ABOUT!?!?!
   /* Set up proccess things */
   list_init (&t->children);
-  t->orphan = false;
 #endif
 
   old_level = intr_disable ();

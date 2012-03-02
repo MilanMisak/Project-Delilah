@@ -62,6 +62,7 @@ process_execute (const char *args)
   child->exitStatus = -1;
   sema_init (&child->wait, 0);
   sema_init (&child->loading_sema, 0);
+  sema_init (&child->free_sema, 0);
   child->loaded_correctly = false;
   list_push_back (&thread_current ()->children, &child->elem);
 
@@ -206,6 +207,18 @@ process_wait (tid_t child_tid UNUSED)
           sema_up (&c->wait);
           int return_value = c->exitStatus;
           c->exitStatus = -1;
+           
+          /*Try to free the child struct */
+          if (sema_try_down (&c->free_sema)) 
+            {
+              list_remove (e);
+              free (c);
+            }
+          else 
+            {
+              sema_up (&c->free_sema);
+            }
+
           return return_value;
         }
     }

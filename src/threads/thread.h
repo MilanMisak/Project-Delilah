@@ -115,9 +115,6 @@ struct thread
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
 
-    bool orphan;                        /* Indicates whether the process'
-                                           parent is dead */
-    
     struct list children;               /* List of the process' children */
 
     struct list open_files;             /* List of open files by this process. */
@@ -144,6 +141,8 @@ struct child
 
     bool loaded_correctly;              /* True, if process was loaded
                                            correctly. False otherwise. */
+    struct semaphore free_sema;         /* Semaphore to allow freeing of the
+                                           struct */
   };
 
 #ifdef USERPROG
