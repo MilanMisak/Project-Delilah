@@ -427,6 +427,19 @@ thread_exit (void)
   /* Re-enable writing to this process's executable file. */
   enum intr_level old_level = intr_disable ();
   file_close (thread_current ()->executable_file);
+
+  /* Close all open files. */
+  struct thread *current = thread_current ();
+  struct list_elem *e;
+
+  for (e = list_begin (&current->open_files); e != list_end (&current->open_files);
+      e = list_next (e))
+    {
+
+      struct open_file *open_file = list_entry (e, struct open_file, elem);
+      file_close (open_file->file);
+      list_remove (&open_file->elem);
+    }
   intr_set_level (old_level);
 
   process_exit ();
