@@ -143,8 +143,21 @@ a new file descriptor.
 >> B3: Describe your code for reading and writing user data from the
 >> kernel.
 
-TODO: Jack or Milan
+Reading and writing user data from the kernel is done using the read and
+write system calls. Both expect a file descriptor, pointer to a buffer and
+a parameter specifying size of the buffer.
 
+All the arguments are checked for safe memory accesses. If anything goes
+bad the process executing the system call gets terminated.
+
+The code then decides upon checking the file descriptor if reading/writing
+is supposed to be from/to standard input, standard output or a file. If
+the process tries to read from STDOUT or write to STDIN, which is an error,
+it gets terminated.
+
+Methods from the filesys directory are used for manipulation with files. For
+standard input and output putbuf and input_getc from the lib directory's
+files are used.
 
 >> B4: Suppose a system call causes a full page (4,096 bytes) of data
 >> to be copied from user space into the kernel.  What is the least
