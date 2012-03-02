@@ -1077,6 +1077,7 @@ thread_close_open_file (int fd)
       if (of->fd == fd)
         {
           list_remove (e);
+          free (of);
           return;
         }
     }
