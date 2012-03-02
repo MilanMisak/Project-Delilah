@@ -841,10 +841,8 @@ init_thread (struct thread *t, const char *name, int priority,
   sema_init (&t->priority_sema, 1);
 
 #ifdef USERPROG
+  /* Initialize lists used in user threads. */
   list_init (&t->open_files);
-
-  //TODO - WTF Milan, WTF YOU TALKING ABOUT!?!?!
-  /* Set up proccess things */
   list_init (&t->children);
 #endif
 
