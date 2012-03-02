@@ -108,6 +108,8 @@ start_process (void *args_)
   if (!success) 
     {
       printf ("%s: exit(%d)\n", file_name, -1);
+
+      free (argv);
       sema_up (&thread_current ()->child->loading_sema);
       thread_exit ();
     }
@@ -162,9 +164,6 @@ start_process (void *args_)
   /* Push a fake return address. */
   if_.esp -= 4;
   *((int *) if_.esp) = 0;
-
-  //TODO - remove hex_dump
-  //hex_dump ((uintptr_t) if_.esp, if_.esp, 50, true);
 
   free (argv);
   free (argv_addr);
