@@ -55,7 +55,8 @@ process_execute (const char *args)
   /* Create a new thread to execute FILE_NAME. */
   struct child *child = malloc (sizeof (struct child));
 
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, args_copy, child);
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, args_copy,
+                       child);
  
   /* Putting child in current processes' children list. */
   child->tid = tid;

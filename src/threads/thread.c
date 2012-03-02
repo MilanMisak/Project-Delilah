@@ -1012,7 +1012,9 @@ has_higher_priority (const struct list_elem *elem_1,
 
 
 #ifdef USERPROG
-/* Adds a file to the list of opened files by the current thread. */
+/* Adds a file to the list of opened files by the current thread.
+   Returns a file descriptor assigned to the open file or -1 if adding
+   it fails. */
 int
 thread_add_open_file (struct file *file)
 {
@@ -1034,7 +1036,9 @@ thread_add_open_file (struct file *file)
 
   struct open_file *new_open_file =
       (struct open_file *) malloc (sizeof (struct open_file));
-  //TODO - check for when malloc returns NULL?
+  if (new_open_file == NULL)
+    return -1;
+
   new_open_file->fd = fd;
   new_open_file->file = file;
   
