@@ -437,7 +437,6 @@ thread_exit (void)
     {
       struct open_file *open_file = list_entry (e, struct open_file, elem);
       file_close (open_file->file);
-      list_remove (&open_file->elem);
     }
   intr_set_level (old_level);
 
@@ -447,7 +446,9 @@ thread_exit (void)
       e = list_pop_front (&current->children);
       struct child *child = list_entry (e, struct child, elem);
       if (sema_try_down (&child->free_sema))
+      {
         free (child);
+      }
       else
         sema_up (&child->free_sema);
     }
@@ -594,6 +595,8 @@ thread_donate_priority (struct thread *donating_thread)
     {
       struct donated_priority *donation =
           malloc (sizeof (struct donated_priority));
+      if (malloc == NULL) 
+        thread_exit ();
       donation->priority = donating_thread->priority;
       donation->blocking_lock = donating_thread->blocking_lock;
       list_insert_ordered (&receiving_thread->donated_priorities,
@@ -839,10 +842,8 @@ init_thread (struct thread *t, const char *name, int priority,
   sema_init (&t->priority_sema, 1);
 
 #ifdef USERPROG
+  /* Initialize lists used in user threads. */
   list_init (&t->open_files);
-
-  //TODO - WTF Milan, WTF YOU TALKING ABOUT!?!?!
-  /* Set up proccess things */
   list_init (&t->children);
 #endif
 
@@ -1077,6 +1078,7 @@ thread_close_open_file (int fd)
       if (of->fd == fd)
         {
           list_remove (e);
+          free (of);
           return;
         }
     }

@@ -98,6 +98,7 @@ start_process (void *args_)
 
   /* Get ARGV and FILE_NAME from ARGS. */
   char **argv = (char **) malloc ((strlen (args) + 1) * sizeof (char));
+
   for (token = strtok_r (args, " ", &save_ptr); token != NULL;
        token = strtok_r (NULL, " ", &save_ptr))
     {

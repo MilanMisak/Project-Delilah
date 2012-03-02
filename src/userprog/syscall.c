@@ -286,7 +286,7 @@ h_read (struct intr_frame *f)
   char *buffer = (char *) *get_argument (2, f->esp);
   int size = *get_argument (3, f->esp);
 
-  if (! is_valid_buffer (buffer, size) || buffer == NULL)
+  if (buffer == NULL || ! is_valid_buffer (buffer, size))
     {
       /* Error: BUFFER is invalid. */
       kill_process ();
@@ -336,7 +336,7 @@ h_write (struct intr_frame *f)
   char *buffer = (char *) *get_argument (2, f->esp);
   int size = *get_argument (3, f->esp);
   
-  if (buffer == NULL)
+  if (buffer == NULL || ! is_valid_buffer (buffer, size))
     {
       /* Error: BUFFER is invalid. */
       kill_process ();
@@ -351,7 +351,6 @@ h_write (struct intr_frame *f)
     {
       int buffer_max_length = 256;
 
-      lock_acquire (&filesys_lock);
       if (size <= buffer_max_length)
         {
           putbuf (buffer, size);
@@ -370,7 +369,6 @@ h_write (struct intr_frame *f)
           putbuf (buffer + bytes_written, size);
           f->eax = bytes_written;
         }
-      lock_release (&filesys_lock);
     }
   else
     {

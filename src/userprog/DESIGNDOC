@@ -97,15 +97,15 @@ Added to struct thread:
 
     struct file *executable_file;       /* Program (executable) file of
                                            this process. */
- 
-New structs: (TODO: add comments)
 
 struct child
   {
-    struct list_elem elem;
-    tid_t tid;
-    int exit_status;
-    struct semaphore wait;
+    struct list_elem elem;              /* List element for a parents children
+                                           list.*/
+    tid_t tid;                          /* The thread's tid.*/
+
+    int exit_status;                    /* The thread's exit status, initialized                                           to -1. */
+    struct semaphore wait;              /* Semaphore to control waiting*/
 
     struct semaphore loading_sema;      /* Semaphore to announce the end of
                                            process loading (both successful or
@@ -132,7 +132,7 @@ struct open_file
 When a file is opened by calling the open system call it gets added to
 current process's list of open files and assigned a unique file descriptor.
 So, file descriptors are unique within a single process only. Also, when a file
-gets closed its file descriptor is freed and it can be reused by the system
+gets closed its file descriptor is /freed and it can be reused by the system
 later for another file.
 
 If the same file is opened and kept open repeatedly, each time time it gets
@@ -143,8 +143,21 @@ a new file descriptor.
 >> B3: Describe your code for reading and writing user data from the
 >> kernel.
 
-TODO: Jack or Milan
+Reading and writing user data from the kernel is done using the read and
+write system calls. Both expect a file descriptor, pointer to a buffer and
+a parameter specifying size of the buffer.
 
+All the arguments are checked for safe memory accesses. If anything goes
+bad the process executing the system call gets terminated.
+
+The code then decides upon checking the file descriptor if reading/writing
+is supposed to be from/to standard input, standard output or a file. If
+the process tries to read from STDOUT or write to STDIN, which is an error,
+it gets terminated.
+
+Methods from the filesys directory are used for manipulation with files. For
+standard input and output putbuf and input_getc from the lib directory's
+files are used.
 
 >> B4: Suppose a system call causes a full page (4,096 bytes) of data
 >> to be copied from user space into the kernel.  What is the least
@@ -214,8 +227,17 @@ if everything is fine or fails/returns an error value if not. No resources
 such as locks or buffers are allocated before all the system call arguments
 are verified.
 
-TODO: Jack, you know about get_user and page fault handling
+When either a page fault occurs from bad memory access, or malloc fails,
+the process exits via kill_process and thread_exit. Inside process_exit 
+there are semaphores which eitherallow for freeing of some structs or flagging it for later freeing if it is being used by another process.
 
+For example, when a process tries to access an unmapped piece of memory,
+get_user is called, which will attempt to access the memory and cause a page
+fault. The page fault handler will simply return to get_user, signaling the
+fauly. Process_exit is then called and any pointers to structs or lists of
+structs will be attempted to be freed or flagged for deletion. The thread
+will set its status to dying in the threas_exit call, and then the thread
+struct itself will be freed by the kernel in schedule().
 
 ---- SYNCHRONIZATION ----
 
@@ -295,9 +317,7 @@ our solution to this one.
 >> B11: The default tid_t to pid_t mapping is the identity mapping.
 >> If you changed it, what advantages are there to your approach?
 
-We did not change this mapping. The advantages in our approach are that
-it is faster because no calculations are needed to map one value to the
-other. As a result of this, it also cuts down on code size.
+We did not change this mapping.
 
                SURVEY QUESTIONS
                ================
