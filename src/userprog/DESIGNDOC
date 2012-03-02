@@ -166,16 +166,15 @@ files are used.
 >> for a system call that only copies 2 bytes of data?  Is there room
 >> for improvement in these numbers, and how much?
 
-The method pagedir_get_page() is called inside every install_page(), which is
-called in load_segment(). This is called once for each loadable segment of data
-to be loaded. A segment is TODO, and therefore a full page requires TODO.
+A page table check is made for every byte loaded into the kernel, to ensure
+that it is not out of bounds. Therefore, there will be 4,096 inspections in
+the first instance, and only 2 in the second.
 
-Had we used the second method for safe page access (assuming memory is safe,
-and handling any page faults as they occur), we would need to access the page
-table significantly less, since we wouldn't need to look up whether or not any
+There are many ways to improve on this number. For example, had we used the
+second method for safe page access (assuming memory is safe, and handling any
+page faults as they occur), we would need to access the page table
+significantly less, since we wouldn't need to look up whether or not any
 pointers were in the correct range.
-
-
 
 TODO: Jack or Milan
 
