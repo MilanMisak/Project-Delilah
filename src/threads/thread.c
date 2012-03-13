@@ -267,6 +267,8 @@ thread_create (const char *name, int priority,
   kf->function = function;
   kf->aux = aux;
 
+  t->args_copy = aux;
+
   /* Stack frame for switch_entry(). */
   ef = alloc_frame (t, sizeof *ef);
   ef->eip = (void (*) (void)) kernel_thread;
@@ -456,6 +458,8 @@ thread_exit (void)
       struct open_file *open_file = list_entry (e, struct open_file, elem);
       free (open_file);
     }
+
+  palloc_free_page(current->args_copy);
 
   process_exit ();
 #endif
