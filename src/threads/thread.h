@@ -122,7 +122,7 @@ struct thread
 
     struct file *executable_file;       /* Program (executable) file of
                                            this process. */
-    char *args_copy;                    /*this is a right little bastard*/
+    char *args_copy;                    /* Pointer to arguments. */
 #endif
 
     /* Owned by thread.c. */
