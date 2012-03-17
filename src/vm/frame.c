@@ -1,5 +1,8 @@
 
+#include <hash.h>
 #include "vm/frame.h"
+
+static struct hash frame_table; /* Frame table*/
 
 struct frame
   {
@@ -32,5 +35,4 @@ frame_lookup (struct hash frame_hash, void *address)
   e = hash_find (&frame_hash, &f.hash_elem);
   return e != NULL ? hash_entry (e, struct frame, hash_elem) : NULL;
 }
-
 
