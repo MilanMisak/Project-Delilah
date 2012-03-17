@@ -1,22 +1,36 @@
 #include "vm/frame.h"
+#include <debug.h>
+#include <stdio.h>
+#include "threads/malloc.h"
+#include "threads/thread.h"
+
+//TODO - Destroy the frame table (free memory) on exit;
 
 static struct hash frame_table; /* Frame table*/
 
 struct frame
   {
-    struct hash_elem hash_elem;
-    void *addr;
+    struct hash_elem hash_elem; /* Hash element in frame table. */
+    void *addr;                 /* Kernel virtual address of the page. */
+    void *uaddr;                /* Virtual address of the page. */
+    struct thread *owner;       /* Owner of the frame. */
   };
 
+void
+frame_init (void)
+{
+  hash_init (&frame_table, &frame_hash_func, &frame_less_func, NULL);
+}
+
 unsigned
-frame_hash_func (const struct hash_elem *e, void *aux) {
+frame_hash_func (const struct hash_elem *e, void *aux UNUSED) {
   const struct frame *f = hash_entry (e, struct frame, hash_elem);
   return hash_bytes (&f->addr, sizeof &f->addr);
 }
 
 bool
 frame_less_func (const struct hash_elem *a, const struct hash_elem *b,
-                 void *aux)
+                 void *aux UNUSED)
 {
   const struct frame *fa = hash_entry (a, struct frame, hash_elem);
   const struct frame *fb = hash_entry (b, struct frame, hash_elem);
@@ -24,13 +38,23 @@ frame_less_func (const struct hash_elem *a, const struct hash_elem *b,
 }
 
 struct frame *
-frame_lookup (const struct hash frame_hash, const void *address)
+frame_lookup (void *addr)
 {
   struct frame f;
   struct hash_elem *e;
 
-  f.addr = address;
-  e = hash_find (&frame_hash, &f.hash_elem);
+  f.addr = addr;
+  e = hash_find (&frame_table, &f.hash_elem);
   return e != NULL ? hash_entry (e, struct frame, hash_elem) : NULL;
-}
+};
 
+void
+frame_insert (void *faddr, void *uaddr)
+{
+  struct frame *f = malloc(sizeof (struct frame));
+  f->addr = faddr;
+  f->uaddr = uaddr;
+  f->owner = thread_current();
+  
+  hash_insert(&frame_table, &f->hash_elem);
+}
