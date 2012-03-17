@@ -1,7 +1,7 @@
 //#ifndef VM_FRAME_H
 //#define VM_FRAME_H
 
-#include "lib/kernel/hash.h"
+#include <hash.h>
 
 unsigned frame_hash_func (const struct hash_elem *e, void *aux);
 

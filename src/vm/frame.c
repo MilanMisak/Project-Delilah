@@ -1,5 +1,3 @@
-
-#include <hash.h>
 #include "vm/frame.h"
 
 static struct hash frame_table; /* Frame table*/
@@ -17,7 +15,7 @@ frame_hash_func (const struct hash_elem *e, void *aux) {
 }
 
 bool
-frame_less_func (const struct hash_elem *a, const struct hash_elem b,
+frame_less_func (const struct hash_elem *a, const struct hash_elem *b,
                  void *aux)
 {
   const struct frame *fa = hash_entry (a, struct frame, hash_elem);
@@ -26,7 +24,7 @@ frame_less_func (const struct hash_elem *a, const struct hash_elem b,
 }
 
 struct frame *
-frame_lookup (struct hash frame_hash, void *address)
+frame_lookup (const struct hash frame_hash, const void *address)
 {
   struct frame f;
   struct hash_elem *e;
