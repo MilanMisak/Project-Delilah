@@ -2,6 +2,7 @@
 #include <debug.h>
 #include <stddef.h>
 #include "userprog/pagedir.h"
+#include "devices/block.h"
 
 void
 page_load(uint32_t *pd, struct page *upage)
@@ -26,13 +27,22 @@ page_write (uint32_t *pd UNUSED, struct page *upage UNUSED)
 }
 
 void
-page_swap_load (struct page *upage UNUSED, void *kpage UNUSED)
+page_swap_load (struct page *upage UNUSED, void *kpage)
 {
+  block_sector_t sector; //TODO: convert upage to sector, or pass sector in
+  struct block *block = block_get_role(BLOCK_SWAP);
+//TODO:  if (block == NULL)  PANIC?
+  block_read (block, sector, kpage);
 }
 
 void
 page_swap_write (struct page *upage UNUSED)
 {
+  block_sector_t sector; //TODO: convert upage to sector, or pass sector in
+  void *buffer; //TODO: get available space in swap table
+  struct block *block = block_get_role(BLOCK_SWAP);
+//TODO:  if (block == NULL)  PANIC?
+   block_write (block, sector, buffer);
 }
 
 void
