@@ -21,7 +21,17 @@ page_load(uint32_t *pd, struct page *upage)
 }
 
 void
+page_write (uint32_t *pd UNUSED, struct page *upage UNUSED)
+{
+}
+
+void
 page_swap_load (struct page *upage UNUSED, void *kpage UNUSED)
+{
+}
+
+void
+page_swap_write (struct page *upage UNUSED)
 {
 }
 

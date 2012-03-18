@@ -17,8 +17,15 @@ struct page
    memory. */
 void page_load (uint32_t *pd, struct page *upage);
 
+/* Writes a page to swap, or does nothing in the case of it being
+   an unmodified file*/
+void page_write (uint32_t *pd, struct page *upage);
+
 /* Loads a page from the swap partition into memory */
 void page_swap_load (struct page *upage, void *kpage);
+
+/* Writes a page from memory to the swap partition */
+void page_swap_write (struct page *upage);
 
 /* Loads a page from the file system into memory */
 void page_filesys_load (struct page *upage, void *kpage);
