@@ -18,6 +18,7 @@
 #include "filesys/file.h"
 #include "filesys/filesys.h"
 #include "userprog/process.h"
+#include "vm/page.h"
 #endif
 
 /* Random value for struct thread's `magic' member.
@@ -255,6 +256,9 @@ thread_create (const char *name, int priority,
   if (thread_mlfqs)
     t->priority = thread_calculate_priority (t); 
   tid = t->tid = allocate_tid ();
+
+  /* Initialize the supplemental page table */
+  hash_init (&t->sup_page_table, &page_hash_func, &page_less_func, NULL);
 
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack' 
@@ -846,8 +850,9 @@ init_thread (struct thread *t, const char *name, int priority,
 #ifdef USERPROG
   /* Initialize lists used in user threads. */
   list_init (&t->open_files);
-  list_init (&t->children);
+  list_init (&t->children);  
 #endif
+
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);

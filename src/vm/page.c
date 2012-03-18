@@ -29,3 +29,30 @@ void
 page_filesys_load (struct page *upage UNUSED, void *kpage UNUSED)
 {
 }
+
+unsigned
+page_hash_func (const struct hash_elem *e, void *aux UNUSED)
+{
+  const struct page *p = hash_entry (e, struct page, hash_elem);
+  return hash_bytes (&p->uaddr, sizeof &p->uaddr);
+}
+
+bool
+page_less_func (const struct hash_elem *a, const struct hash_elem *b,
+                 void *aux UNUSED)
+{
+  const struct page *pa = hash_entry (a, struct page, hash_elem);
+  const struct page *pb = hash_entry (b, struct page, hash_elem);
+  return pa->uaddr < pb->uaddr;
+}
+
+struct page *
+page_lookup (struct hash *page_table, void *uaddr)
+{
+  struct page p;
+  struct hash_elem *e;
+
+  p.uaddr = uaddr;
+  e = hash_find (page_table, &p.hash_elem);
+  return e != NULL ? hash_entry (e, struct page, hash_elem) : NULL;
+}

@@ -2,9 +2,11 @@
 #define THREADS_THREAD_H
 
 #include <debug.h>
+#include <hash.h>
 #include <list.h>
 #include <stdint.h>
 #include "synch.h"
+
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -123,7 +125,10 @@ struct thread
     struct file *executable_file;       /* Program (executable) file of
                                            this process. */
     char *args_copy;                    /* Pointer to arguments. */
+
+    struct hash sup_page_table;         /* Supplemental page table. */
 #endif
+
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */

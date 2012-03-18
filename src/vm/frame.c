@@ -23,7 +23,8 @@ frame_init (void)
 }
 
 unsigned
-frame_hash_func (const struct hash_elem *e, void *aux UNUSED) {
+frame_hash_func (const struct hash_elem *e, void *aux UNUSED) 
+{
   const struct frame *f = hash_entry (e, struct frame, hash_elem);
   return hash_bytes (&f->addr, sizeof &f->addr);
 }
