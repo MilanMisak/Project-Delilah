@@ -1,8 +1,9 @@
 #include "vm/page.h"
 #include <debug.h>
 #include <stddef.h>
-#include "userprog/pagedir.h"
 #include "devices/block.h"
+#include "userprog/pagedir.h"
+#include "vm/swap.h"
 
 
 /* Loads a page from the swap partition into memory */
@@ -46,13 +47,10 @@ page_swap_load (struct page *upage UNUSED, void *kpage)
 }
 
 void
-page_swap_write (struct page *upage UNUSED)
+page_swap_write (struct page *upage)
 {
-  block_sector_t sector; //TODO: convert upage to sector, or pass sector in
-  void *buffer; //TODO: get available space in swap table
-  struct block *block = block_get_role (BLOCK_SWAP);
-//TODO:  if (block == NULL)  PANIC?
-  block_write (block, sector, buffer);
+  //TODO - remove this bollocks
+  swap_write_page (upage);
 }
 
 void
