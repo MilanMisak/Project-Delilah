@@ -1,3 +1,6 @@
+#ifndef VM_PAGE_H
+#define VM_PAGE_H
+
 #include <hash.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -30,3 +33,5 @@ bool page_less_func (const struct hash_elem *a, const struct hash_elem *b,
 /* Looks up a page in PAGE_TABLE specified by the virtual address
    in UADDR. Returns NULL if no page is found. */
 struct page * page_lookup (struct hash *page_table, void *uaddr);
+
+#endif
