@@ -22,6 +22,8 @@
 #include "threads/palloc.h"
 #include "threads/pte.h"
 #include "threads/thread.h"
+#include "vm/frame.h"
+#include "vm/swap.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #include "userprog/exception.h"
@@ -128,7 +130,9 @@ main (void)
 #endif
 
   /* Initialize frame table */
-  frame_init();
+  frame_init ();
+  /* Initialize swap table. */
+  swap_init ();
 
   printf ("Boot complete.\n");
   
