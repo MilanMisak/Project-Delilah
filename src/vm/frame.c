@@ -10,10 +10,10 @@ static struct hash frame_table; /* Frame table*/
 
 struct frame
   {
-    struct hash_elem hash_elem; /* Hash element in frame table. */
     void *addr;                 /* Kernel virtual address of the page. */
     void *uaddr;                /* Virtual address of the page. */
     struct thread *owner;       /* Owner of the frame. */
+    struct hash_elem hash_elem; /* Hash element in frame table. */
   };
 
 void
@@ -52,10 +52,10 @@ frame_lookup (void *addr)
 void
 frame_insert (void *faddr, void *uaddr)
 {
-  struct frame *f = malloc(sizeof (struct frame));
+  struct frame *f = malloc (sizeof (struct frame));
   f->addr = faddr;
   f->uaddr = uaddr;
-  f->owner = thread_current();
+  f->owner = thread_current ();
   
-  hash_insert(&frame_table, &f->hash_elem);
+  hash_insert (&frame_table, &f->hash_elem);
 }

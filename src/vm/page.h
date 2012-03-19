@@ -18,21 +18,14 @@ struct page
 void page_load (uint32_t *pd, struct page *upage);
 
 /* Writes a page to swap, or does nothing in the case of it being
-   an unmodified file*/
+   an unmodified file. */
 void page_write (uint32_t *pd, struct page *upage);
-
-/* Loads a page from the swap partition into memory */
-void page_swap_load (struct page *upage, void *kpage);
-
-/* Writes a page from memory to the swap partition */
-void page_swap_write (struct page *upage);
-
-/* Loads a page from the file system into memory */
-void page_filesys_load (struct page *upage, void *kpage);
 
 unsigned page_hash_func (const struct hash_elem *e, void *aux);
 
 bool page_less_func (const struct hash_elem *a, const struct hash_elem *b,
                       void *aux);
 
+/* Looks up a page in PAGE_TABLE specified by the virtual address
+   in UADDR. Returns NULL if no page is found. */
 struct page * page_lookup (struct hash *page_table, void *uaddr);
