@@ -33,11 +33,15 @@ static void h_seek     (struct intr_frame *f);
 static void h_tell     (struct intr_frame *f);
 static void h_close    (struct intr_frame *f);
 
+static void h_mmap     (struct intr_frame *f);
+static void h_munmap   (struct intr_frame *f);
+
 /* System call handlers array. */
 typedef void (*handler) (struct intr_frame *f);
-static handler (handlers[13]) = {&h_halt, &h_exit, &h_exec, &h_wait, &h_create,
+static handler (handlers[15]) = {&h_halt, &h_exit, &h_exec, &h_wait, &h_create,
                                  &h_remove, &h_open, &h_filesize, &h_read,
-                                 &h_write, &h_seek, &h_tell, &h_close};
+                                 &h_write, &h_seek, &h_tell, &h_close,
+                                 &h_mmap, &h_munmap};
 
 static struct lock filesys_lock;
 
@@ -450,4 +454,35 @@ h_close (struct intr_frame *f)
   lock_acquire (&filesys_lock);
   thread_close_open_file (fd);
   lock_release (&filesys_lock);
+}
+
+/* The mmap system call. */
+static void
+h_mmap (struct intr_frame *f)
+{
+  /* Get FD and ADDR from the stack. */
+  int fd = *get_argument (1, f->esp);
+  void *addr = get_argument (2, f->esp);
+
+  //TODO - not sure if these should kill the process or just return -1
+  if (fd == STDIN_FILENO || fd == STDOUT_FILENO)
+    {
+      /* Error: console input and output are not mappable. */
+      kill_process ();
+    }
+  if (addr == 0)
+    {
+      /* Error: Pintos assumes page 0 is not mapped. */
+      kill_process ();
+    }
+
+}
+
+/* The munmap system call. */
+static void
+h_munmap (struct intr_frame *f)
+{
+  /* Get MAPPING from the stack. */
+  int mapping = *get_argument (1, f->esp);
+
 }
