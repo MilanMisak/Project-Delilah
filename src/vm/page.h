@@ -4,6 +4,7 @@
 #include <hash.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include "devices/block.h"
 //#include "filesys/off_t.h"
 
 
@@ -11,7 +12,7 @@ struct page
   {
    struct hash_elem hash_elem; /* Hash element for a supplemental page table */
    uint8_t *uaddr;             /* Address of the page in user virtual memory.*/
-   uint32_t *saddr;            /* Address of the page in swap. */
+   block_sector_t saddr;       /* Address of the page in swap. */
    const char *name;           /* Name of the page if stored in filesys. */
    bool write;                 /* Boolean to indicate read/write permissions.*/
   };
