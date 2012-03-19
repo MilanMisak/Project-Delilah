@@ -45,13 +45,13 @@ swap_write_page (struct page *page)
 
 void swap_read_page (struct page *page)
 {
-  //TODO flip the bit in the used map;
+  bitmap_flip (used_map, page->saddr);
 
   void *buffer = page->uaddr;
   unsigned i;
   for (i = 0; i < SECTORS_PER_PAGE; i++)
     {
-      block_read (swap_device, page->saddr, page->uaddr);
+      block_read (swap_device, (page->saddr * SECTORS_PER_PAGE), page->uaddr);
       buffer += 512;
     }
 }
