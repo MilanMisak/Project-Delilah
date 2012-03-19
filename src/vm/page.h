@@ -12,7 +12,7 @@ struct page
   {
    struct hash_elem hash_elem; /* Hash element for a supplemental page table */
    uint8_t *uaddr;             /* Address of the page in user virtual memory.*/
-   size_t saddr;               /* Index of the swap slot */
+   int saddr;                  /* Index of the swap slot */
    const char *name;           /* Name of the page if stored in filesys. */
    bool write;                 /* Boolean to indicate read/write permissions.*/
   };

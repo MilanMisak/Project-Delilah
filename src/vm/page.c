@@ -22,17 +22,18 @@ page_load (uint32_t *pd, struct page *upage)
   pagedir_set_page (pd, (void *) upage->uaddr, kpage, upage->write);
 
   /* Load the page into memory again.*/
-  if (upage->saddr == NULL)
+  if (upage->saddr == -1)
     page_swap_load (upage, kpage);
   else
     page_filesys_load (upage, kpage);
 }
 
 void
-page_write (uint32_t *pd UNUSED, struct page *upage UNUSED)
+page_write (uint32_t *pd UNUSED, struct page *upage)
 {
-  //TODO - page_write
-  //swap_write_page (upage);
+  //TODO - remove page from thread's page table or something
+  if (upage->saddr != -1)
+    swap_write_page (upage);
 }
 
 void
