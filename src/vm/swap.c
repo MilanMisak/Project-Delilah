@@ -35,7 +35,7 @@ swap_write_page (struct page *page)
 
   block_sector_t sector = index * SECTORS_PER_PAGE;
   void *buffer = page->uaddr;
-  unsigned i;
+  unsigned int i;
   for (i = 0; i < SECTORS_PER_PAGE; i++) 
     {
       block_write (swap_device, sector, buffer);
@@ -48,7 +48,7 @@ void swap_read_page (struct page *page)
   //TODO flip the bit in the used map;
 
   void *buffer = page->uaddr;
-  unsigned i;
+  unsigned int i;
   for (i = 0; i < SECTORS_PER_PAGE; i++)
     {
       block_read (swap_device, page->saddr, page->uaddr);

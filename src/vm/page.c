@@ -9,9 +9,6 @@
 /* Loads a page from the swap partition into memory */
 void page_swap_load (struct page *upage, void *kpage);
 
-/* Writes a page from memory to the swap partition */
-void page_swap_write (struct page *upage);
-
 /* Loads a page from the file system into memory */
 void page_filesys_load (struct page *upage, void *kpage);
 
@@ -35,6 +32,7 @@ void
 page_write (uint32_t *pd UNUSED, struct page *upage UNUSED)
 {
   //TODO - page_write
+  //swap_write_page (upage);
 }
 
 void
@@ -44,13 +42,6 @@ page_swap_load (struct page *upage UNUSED, void *kpage)
   struct block *block = block_get_role (BLOCK_SWAP);
 //TODO:  if (block == NULL)  PANIC?
   block_read (block, sector, kpage);
-}
-
-void
-page_swap_write (struct page *upage)
-{
-  //TODO - remove this bollocks
-  swap_write_page (upage);
 }
 
 void
