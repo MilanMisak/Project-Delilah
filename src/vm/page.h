@@ -19,7 +19,7 @@ struct page
 
 /* Called when there is a page fault to load the relevant page back into
    memory. */
-void page_load (uint32_t *pd, struct page *upage);
+void page_load (struct page *upage);
 
 /* Writes a page to swap, or does nothing in the case of it being
    an unmodified file. */

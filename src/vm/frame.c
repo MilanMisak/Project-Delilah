@@ -8,14 +8,6 @@
 
 static struct hash frame_table; /* Frame table*/
 
-struct frame
-  {
-    void *addr;                 /* Kernel virtual address of the page. */
-    void *uaddr;                /* Virtual address of the page. */
-    struct thread *owner;       /* Owner of the frame. */
-    struct hash_elem hash_elem; /* Hash element in frame table. */
-  };
-
 void
 frame_init (void)
 {
@@ -60,10 +52,10 @@ frame_insert (void *faddr, void *uaddr)
   hash_insert (&frame_table, &f->hash_elem);
 }
 
-void
+struct frame *
 frame_remove (void *kpage)
 {
   struct frame *removing = frame_lookup (kpage);
   hash_delete (&frame_table,&removing->hash_elem);
-  free (removing);
+  return removing;
 }

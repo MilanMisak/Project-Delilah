@@ -20,6 +20,7 @@
 #include "threads/vaddr.h"
 #include "lib/string.h"
 #include "lib/stdio.h"
+#include "vm/frame.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -611,11 +612,10 @@ install_page (void *upage, void *kpage, bool writable)
 }
 
 void
-uninstall_page (void *upage)
+uninstall_page (void *kpage)
 {
-  struct thread *t = thread_current ();
-  void *kpage = pagedir_get_page (t->pagedir,upage);
-  frame_remove (kpage);
-  pagedir_clear_page (t->pagedir,upage);
+  struct frame *removing = frame_remove (kpage);
+  pagedir_clear_page (removing->owner->pagedir, removing->uaddr);
+  free (removing);
 }
 
