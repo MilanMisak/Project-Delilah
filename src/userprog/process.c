@@ -609,3 +609,11 @@ install_page (void *upage, void *kpage, bool writable)
 
   return success;
 }
+
+void
+uninstall_page (void *upage)
+{
+  struct thread *t = thread_current ();
+  pagedir_clear_page (t->pagedir,upage);
+}
+
