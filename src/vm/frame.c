@@ -59,3 +59,11 @@ frame_insert (void *faddr, void *uaddr)
   
   hash_insert (&frame_table, &f->hash_elem);
 }
+
+void
+frame_remove (void *kpage)
+{
+  struct frame *removing = frame_lookup (kpage);
+  hash_delete (&frame_table,&removing->hash_elem);
+  free (removing);
+}

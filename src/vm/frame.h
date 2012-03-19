@@ -19,4 +19,6 @@ struct frame *frame_lookup (void *addr);
 /* Given a frame virtual address, makes a frame struct and inserts it into the table. */
 void frame_insert (void *faddr, void *uaddr);
 
+void frame_remove (void *);
+
 #endif

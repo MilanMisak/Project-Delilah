@@ -614,6 +614,8 @@ void
 uninstall_page (void *upage)
 {
   struct thread *t = thread_current ();
+  void *kpage = pagedir_get_page (t->pagedir,upage);
+  frame_remove (kpage);
   pagedir_clear_page (t->pagedir,upage);
 }
 
