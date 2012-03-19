@@ -20,7 +20,8 @@ page_load (uint32_t *pd, struct page *upage)
 
   /* Load the page into memory again.*/
   if (upage->saddr == -1)
-    page_swap_load (upage, kpage);
+    swap_read_page (upage);
+    //page_swap_load (upage, kpage);
   else
     page_filesys_load (upage, kpage);
 }
