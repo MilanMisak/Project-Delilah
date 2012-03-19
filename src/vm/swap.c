@@ -24,7 +24,6 @@ swap_init (void)
   swap_device = block_get_role (BLOCK_SWAP);
 }
 
-
 void
 swap_write_page (struct page *page)
 {
