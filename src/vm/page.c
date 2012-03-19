@@ -6,9 +6,6 @@
 #include "vm/swap.h"
 
 
-/* Loads a page from the swap partition into memory */
-void page_swap_load (struct page *upage, void *kpage);
-
 /* Loads a page from the file system into memory */
 void page_filesys_load (struct page *upage, void *kpage);
 
@@ -34,15 +31,6 @@ page_write (uint32_t *pd UNUSED, struct page *upage)
   //TODO - remove page from thread's page table or something
   if (upage->saddr != -1)
     swap_write_page (upage);
-}
-
-void
-page_swap_load (struct page *upage UNUSED, void *kpage)
-{
-  block_sector_t sector; //TODO: convert upage to sector, or pass sector in
-  struct block *block = block_get_role (BLOCK_SWAP);
-//TODO:  if (block == NULL)  PANIC?
-  block_read (block, sector, kpage);
 }
 
 void
