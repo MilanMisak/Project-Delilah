@@ -12,26 +12,11 @@
 /* Bitmap to record which indices in swap table are busy. */
 static struct bitmap *used_map;
 
-//TODO
-static struct swap_table_entry **swap_table;
-
 /* Initializes the swap table. */
 void
 swap_init (void)
 {
   used_map = bitmap_create (ENTRY_COUNT);
-  swap_table = (struct swap_table_entry **)
-      malloc (ENTRY_COUNT * sizeof (struct swap_table_entry));
-
-  unsigned int i;
-  for (i = 0; i < ENTRY_COUNT; i++)
-    {
-      struct swap_table_entry *entry = (struct swap_table_entry *)
-          malloc (sizeof (struct swap_table_entry));
-      entry->start_sector_index = (i * PGSIZE) / BLOCK_SECTOR_SIZE;
-      entry->offset = (i * PGSIZE) % BLOCK_SECTOR_SIZE;
-      swap_table[i] = entry;
-    }
 }
 
 
@@ -44,5 +29,4 @@ swap_write_frame (struct frame *frame)
       //TODO - error case
     }
 
-  struct swap_table_entry *table_entry = swap_table[index];
 }
