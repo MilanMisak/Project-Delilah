@@ -30,7 +30,7 @@ swap_write_page (struct page *page)
   size_t index = bitmap_scan_and_flip (used_map, 0, 1, false);
   if (index == BITMAP_ERROR)
     {
-      //TODO - error case
+      PANIC("swap partition is full");
     }
 
   block_sector_t sector = index * SECTORS_PER_PAGE;
