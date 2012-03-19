@@ -1,5 +1,6 @@
-//#ifndef VM_FRAME_H
-//#define VM_FRAME_H
+#ifndef VM_FRAME_H
+#define VM_FRAME_H
+
 #include <hash.h>
 
 /* Initializes the frame table. */
@@ -18,4 +19,4 @@ struct frame *frame_lookup (void *addr);
 /* Given a frame virtual address, makes a frame struct and inserts it into the table. */
 void frame_insert (void *faddr, void *uaddr);
 
-//#endif
+#endif
