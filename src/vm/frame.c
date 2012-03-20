@@ -1,8 +1,12 @@
 #include "vm/frame.h"
+#include <random.h>
 #include <debug.h>
 #include <stdio.h>
 #include "threads/malloc.h"
+#include "threads/palloc.h"
 #include "threads/thread.h"
+#include "threads/vaddr.h"
+#include "vm/page.h"
 
 //TODO - Destroy the frame table (free memory) on exit;
 
@@ -59,4 +63,23 @@ frame_less_func (const struct hash_elem *a, const struct hash_elem *b,
   const struct frame *fa = hash_entry (a, struct frame, hash_elem);
   const struct frame *fb = hash_entry (b, struct frame, hash_elem);
   return fa->addr < fb->addr;
+}
+
+void
+frame_evict ()
+{
+  struct thread *t = thread_current ();
+  struct pool *user_pool = get_user_pool ();
+  struct frame *evictee;  
+  int frame_table_size = hash_size (&frame_table);
+  int index;
+  
+  do {
+    index = (random_ulong () % frame_table_size) - 1;
+    void *i = user_pool->base + PGSIZE * index;
+    evictee = frame_lookup (i);
+  } while (evictee->owner == t);
+  
+  page_create (evictee);
+  bitmap_flip (user_pool->used_map, (index));
 }
