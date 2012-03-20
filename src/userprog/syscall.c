@@ -464,15 +464,17 @@ h_mmap (struct intr_frame *f)
   int fd = *get_argument (1, f->esp);
   void *addr = get_argument (2, f->esp);
 
-  //TODO - not sure if this should kill the process or just return -1
   if (fd == STDIN_FILENO || fd == STDOUT_FILENO)
     {
       /* Error: console input and output are not mappable. */
-      kill_process ();
+      f->eax = -1;
+      return;
     }
-  if (*((int*) addr) == 0)
+  int int_addr = *((int*) addr);
+  if (int_addr == 0 || int_addr % PGSIZE != 0)
     {
-      /* Error: Pintos assumes virtual address 0 is not mapped. */
+      /* Error: Pintos assumes virtual address 0 is not mapped, also
+         the given virtual address must be page aligned. */
       f->eax = -1;
       return;
     }
@@ -484,12 +486,35 @@ h_mmap (struct intr_frame *f)
       f->eax = -1;
       return;
     }
+ 
+  /* Get file size. */
+  lock_acquire (&filesys_lock);
+  off_t file_size = file_length (open_file);
+  lock_release (&filesys_lock);
+
+  if (file_size == 0)
+    {
+      /* Error: File size is zero bytes. */
+      f->eax = -1;
+      return;
+    }
+
+  if (thread_collides_with_mapped_files (addr, file_size))
+    {
+      /* Virtual address space required by the potential new mapping
+         collides with an existing mapping. */
+      f->eax = -1;
+      return;
+    }
   
+  /* Reopen the mapped file. */
   lock_acquire (&filesys_lock);
   struct file *mapped_file = file_reopen (open_file);
   lock_release (&filesys_lock);
-  int mapping_id = thread_add_mapped_file (mapped_file, addr);
   
+  /* Add file's mapping. */
+  int mapping_id = thread_add_mapped_file (mapped_file, addr, file_size);
+
   /* Return the mapping ID. */
   f->eax = mapping_id;
 }

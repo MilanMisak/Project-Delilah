@@ -125,9 +125,9 @@ struct thread
     struct file *executable_file;       /* Program (executable) file of
                                            this process. */
     char *args_copy;                    /* Pointer to arguments. */
-
-    struct hash sup_page_table;         /* Supplemental page table. */
 #endif
+    
+    struct hash sup_page_table;        /* Supplemental page table. */
 
     struct list mapped_files;           /* List of files mapped to memory by
                                            this process. */
@@ -174,6 +174,7 @@ struct mapped_file
     struct file *file;                  /* Pointer to the file struct. */
     void *addr;                         /* Address at which the file is
                                            mapped. */
+    int size;                           /* Size of the file in bytes. */
     struct list_elem elem;              /* List element. */
   };
 
@@ -231,7 +232,8 @@ struct file *thread_get_open_file (int fd);
 void thread_close_open_file (int fd);
 #endif
 
-int thread_add_mapped_file (struct file *file, void *addr);
+int thread_add_mapped_file (struct file *file, void *addr, int size);
 void thread_remove_mapped_file (int mapping_id);
+bool thread_collides_with_mapped_files (void *addr, int size);
 
 #endif /* threads/thread.h */

@@ -60,7 +60,7 @@ swap_read_page (struct page *page)
 void
 swap_remove_page (struct page *page)
 {
-  bitmap_flip (used_map, page->saddr);
+  //bitmap_flip (&used_map, page->saddr);
   //TODO: freeing?
 }
 

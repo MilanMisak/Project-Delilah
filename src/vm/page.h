@@ -22,7 +22,7 @@ struct page
    memory. */
 void page_load (struct page *upage);
 
-struct page * page_create (struct frame *frame);
+void page_create (struct frame *frame);
 
 /* Writes a page to swap, or does nothing in the case of it being
    an unmodified file. */

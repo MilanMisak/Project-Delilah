@@ -28,14 +28,14 @@ page_load (struct page *upage)
 }
 
 
-struct page *
+void
 page_create (struct frame *frame)
 {
   /* Create the page struct */
-  struct page *page = malloc (sizeof page);
+  struct page *page = malloc (sizeof (struct page));
   page->saddr = -1;
   page->uaddr = frame->uaddr;
-  page->write = true;
+  page->write = frame->write;
  
   /* Write the page to swap or filesys */
   page_write (page, frame);
@@ -43,15 +43,13 @@ page_create (struct frame *frame)
   /* Destroy the frame */
   uninstall_page (frame->addr);
   free (frame);
-
-  return page;
 }
 
 void
 page_write (struct page *upage, struct frame *frame)
-{
+{ 
   hash_insert (&frame->owner->sup_page_table, &upage->hash_elem);
-
+  
   if (upage->saddr != -1)
     swap_write_page (upage);
 }
