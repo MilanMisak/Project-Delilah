@@ -14,22 +14,6 @@ frame_init (void)
   hash_init (&frame_table, &frame_hash_func, &frame_less_func, NULL);
 }
 
-unsigned
-frame_hash_func (const struct hash_elem *e, void *aux UNUSED) 
-{
-  const struct frame *f = hash_entry (e, struct frame, hash_elem);
-  return hash_bytes (&f->addr, sizeof &f->addr);
-}
-
-bool
-frame_less_func (const struct hash_elem *a, const struct hash_elem *b,
-                 void *aux UNUSED)
-{
-  const struct frame *fa = hash_entry (a, struct frame, hash_elem);
-  const struct frame *fb = hash_entry (b, struct frame, hash_elem);
-  return fa->addr < fb->addr;
-}
-
 struct frame *
 frame_lookup (void *addr)
 {
@@ -39,7 +23,7 @@ frame_lookup (void *addr)
   f.addr = addr;
   e = hash_find (&frame_table, &f.hash_elem);
   return e != NULL ? hash_entry (e, struct frame, hash_elem) : NULL;
-};
+}
 
 void
 frame_insert (void *faddr, void *uaddr)
@@ -56,6 +40,22 @@ struct frame *
 frame_remove (void *kpage)
 {
   struct frame *removing = frame_lookup (kpage);
-  hash_delete (&frame_table,&removing->hash_elem);
+  hash_delete (&frame_table, &removing->hash_elem);
   return removing;
+}
+
+unsigned
+frame_hash_func (const struct hash_elem *e, void *aux UNUSED) 
+{
+  const struct frame *f = hash_entry (e, struct frame, hash_elem);
+  return hash_bytes (&f->addr, sizeof &f->addr);
+}
+
+bool
+frame_less_func (const struct hash_elem *a, const struct hash_elem *b,
+                 void *aux UNUSED)
+{
+  const struct frame *fa = hash_entry (a, struct frame, hash_elem);
+  const struct frame *fb = hash_entry (b, struct frame, hash_elem);
+  return fa->addr < fb->addr;
 }
