@@ -245,10 +245,12 @@ thread_create (const char *name, int priority,
   if (t == NULL)
     return TID_ERROR;
 
+
   /* Initialize thread. */
   init_thread (t, name, priority, thread_get_recent_cpu (),
                thread_get_nice ());
 
+  
   /* Assign the child struct */
   t->child = child;
 
@@ -257,8 +259,6 @@ thread_create (const char *name, int priority,
     t->priority = thread_calculate_priority (t); 
   tid = t->tid = allocate_tid ();
 
-  /* Initialize the supplemental page table */
-  hash_init (&t->sup_page_table, &page_hash_func, &page_less_func, NULL);
 
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack' 
@@ -281,6 +281,10 @@ thread_create (const char *name, int priority,
   sf = alloc_frame (t, sizeof *sf);
   sf->eip = switch_entry;
   sf->ebp = 0;
+
+  
+  /* Initialize the supplemental page table */
+  hash_init (&t->sup_page_table, &page_hash_func, &page_less_func, NULL);
 
   intr_set_level (old_level);
 

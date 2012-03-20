@@ -37,7 +37,7 @@ frame_insert (void *faddr, void *uaddr, bool write)
   f->uaddr = uaddr;
   f->write = write;
   f->owner = thread_current ();
-  
+
   hash_insert (&frame_table, &f->hash_elem);
 }
 
@@ -74,11 +74,9 @@ frame_evict ()
   int frame_table_size = hash_size (&frame_table);
   int index;
   
-  do {
-    index = (random_ulong () % frame_table_size) - 1;
-    void *i = user_pool->base + PGSIZE * index;
-    evictee = frame_lookup (i);
-  } while (evictee->owner == t);
+  index = (random_ulong () % (frame_table_size - 1));
+  void *i = user_pool->base + PGSIZE * index;
+  evictee = frame_lookup (i);
   
   page_create (evictee);
   bitmap_flip (user_pool->used_map, (index));
