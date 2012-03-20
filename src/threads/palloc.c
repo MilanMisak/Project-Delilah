@@ -27,20 +27,11 @@
    half to the user pool.  That should be huge overkill for the
    kernel pool, but that's just fine for demonstration purposes. */
 
-/* A memory pool. */
-struct pool
-  {
-    struct lock lock;                   /* Mutual exclusion. */
-    struct bitmap *used_map;            /* Bitmap of free pages. */
-    uint8_t *base;                      /* Base of pool. */
-  };
-
-/* Two pools: one for kernel data, one for user pages. */
-static struct pool kernel_pool, user_pool;
-
 static void init_pool (struct pool *, void *base, size_t page_cnt,
                        const char *name);
 static bool page_from_pool (const struct pool *, void *page);
+
+static struct pool kernel_pool, user_pool;
 
 /* Initializes the page allocator.  At most USER_PAGE_LIMIT
    pages are put into the user pool. */
@@ -99,20 +90,7 @@ palloc_get_multiple (enum palloc_flags flags, size_t page_cnt)
         PANIC ("palloc_get: out of pages"); */
         if (PAL_USER && page_cnt == 1)
           {
-           /* Find a frame not belonging to the current thread*/
-           int start = -1;
-           do {
-             start++;
-             page_idx = bitmap_scan (pool->used_map, start, 1, true);
-             pages = pool->base + PGSIZE * page_idx;
-           } while (frame_lookup (pages)->owner == thread_current ());
-      
-           /* Store the page in swap, remove the frame*/
-           if (frame_lookup (pages)->owner != thread_current ())
-             {
-               page_create (frame_lookup (pages));
-               bitmap_flip (pool->used_map, page_idx);
-             }
+            frame_evict ();
           }
         else
           if (flags && PAL_ASSERT)
@@ -157,6 +135,12 @@ void *
 palloc_get_page (enum palloc_flags flags) 
 {
   return palloc_get_multiple (flags, 1);
+}
+
+struct pool *
+get_user_pool ()
+{
+  return &user_pool;
 }
 
 /* Frees the PAGE_CNT pages starting at PAGES. */

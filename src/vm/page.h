@@ -26,7 +26,7 @@ struct page * page_create (struct frame *frame);
 
 /* Writes a page to swap, or does nothing in the case of it being
    an unmodified file. */
-void page_write (uint32_t *pd, struct page *upage);
+void page_write (struct page *upage, struct frame *frame);
 
 /* Looks up a page in PAGE_TABLE specified by the virtual address
    in UADDR. Returns NULL if no page is found. */

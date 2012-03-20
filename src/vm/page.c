@@ -4,7 +4,6 @@
 #include "devices/block.h"
 #include "threads/malloc.h"
 #include "threads/palloc.h"
-#include "userprog/pagedir.h"
 #include "userprog/process.h"
 #include "vm/frame.h"
 #include "vm/swap.h"
@@ -39,7 +38,7 @@ page_create (struct frame *frame)
   page->write = true;
   
   /* Write the page to swap or filesys */
-  page_write (frame->owner->pagedir, page);
+  page_write (page, frame);
 
   /* Destroy the frame */
   frame_remove (frame->addr);
@@ -49,8 +48,11 @@ page_create (struct frame *frame)
 }
 
 void
-page_write (uint32_t *pd UNUSED, struct page *upage)
+page_write (struct page *upage, struct frame *frame)
 {
+  uninstall_page (frame->addr);
+  hash_insert (&frame->owner->sup_page_table, &upage->hash_elem);
+
   if (upage->saddr != -1)
     swap_write_page (upage);
 }
