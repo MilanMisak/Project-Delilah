@@ -466,7 +466,6 @@ thread_exit (void)
 
       free (p);
     }
-  
 
   /* Close all open files. */
   for (e = list_begin (&current->open_files); 
@@ -1128,7 +1127,7 @@ thread_close_open_file (int fd)
 
 /* Adds a memory mapped file to the current process. */
 int
-thread_add_mapped_file (struct file *file, void *addr)
+thread_add_mapped_file (struct file *file, void *addr, int size)
 {
   struct thread *current = thread_current ();
   int mapping_id;
@@ -1152,6 +1151,8 @@ thread_add_mapped_file (struct file *file, void *addr)
 
   new_mapped_file->mapping_id = mapping_id;
   new_mapped_file->file = file;
+  new_mapped_file->addr = addr;
+  new_mapped_file->size = size;
   
   list_push_back (&current->mapped_files, &new_mapped_file->elem);
   
@@ -1177,4 +1178,25 @@ thread_remove_mapped_file (int mapping_id)
           return;
         }
     }
+}
+
+/* Checks if a newly mapped file at virtual address ADDR of size
+   SIZE would collide with files already mapped. */
+bool
+thread_collides_with_mapped_files (void *addr, int size)
+{
+  void *end_addr = addr + size;
+  struct thread *current = thread_current ();
+  struct list_elem *e;
+
+  for (e = list_begin (&current->mapped_files);
+       e != list_end (&current->mapped_files); e = list_next (e))
+    {
+      struct mapped_file *mf = list_entry (e, struct mapped_file, elem);
+      if (end_addr < mf->addr || addr > (mf->addr + mf->size))
+        continue;
+      return true;
+    }
+
+  return false;
 }
