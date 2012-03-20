@@ -853,6 +853,7 @@ init_thread (struct thread *t, const char *name, int priority,
   list_init (&t->children);  
 #endif
 
+  list_init (&t->mapped_files);
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
@@ -1091,12 +1092,56 @@ thread_close_open_file (int fd)
         }
     }
 }
+#endif
 
 /* Adds a memory mapped file to the current process. */
 int
-thread_add_mapped_file (struct file *file)
+thread_add_mapped_file (struct file *file, void *addr)
 {
-  //TODO - thread_add_mapped_file
-  return 5;
+  struct thread *current = thread_current ();
+  int mapping_id;
+
+  if (list_empty (&current->mapped_files))
+    {
+      mapping_id = 0;
+    }
+  else
+    {
+      struct list_elem *last_elem = list_rbegin (&current->mapped_files);
+      struct mapped_file *last_file =
+          list_entry (last_elem, struct mapped_file, elem);
+      mapping_id = last_file->mapping_id + 1;
+    }
+
+  struct mapped_file *new_mapped_file =
+      (struct mapped_file *) malloc (sizeof (struct mapped_file));
+  if (new_mapped_file == NULL)
+    return -1;
+
+  new_mapped_file->mapping_id = mapping_id;
+  new_mapped_file->file = file;
+  
+  list_push_back (&current->mapped_files, &new_mapped_file->elem);
+  
+  return mapping_id;
 }
-#endif
+
+/* Removes a memory mapped file specified by MAPPING_ID. */
+void
+thread_remove_mapped_file (int mapping_id)
+{
+  struct thread *current = thread_current ();
+  struct list_elem *e;
+
+  for (e = list_begin (&current->mapped_files);
+       e != list_end (&current->mapped_files); e = list_next (e))
+    {
+      struct mapped_file *mf = list_entry (e, struct mapped_file, elem);
+      if (mf->mapping_id == mapping_id)
+        {
+          list_remove (e);
+          free (mf);
+          return;
+        }
+    }
+}

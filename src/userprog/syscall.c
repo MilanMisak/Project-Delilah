@@ -488,7 +488,7 @@ h_mmap (struct intr_frame *f)
   lock_acquire (&filesys_lock);
   struct file *mapped_file = file_reopen (open_file);
   lock_release (&filesys_lock);
-  int mapping_id = thread_add_mapped_file (mapped_file);
+  int mapping_id = thread_add_mapped_file (mapped_file, addr);
   
   /* Return the mapping ID. */
   f->eax = mapping_id;
@@ -501,4 +501,5 @@ h_munmap (struct intr_frame *f)
   /* Get MAPPING from the stack. */
   int mapping = *get_argument (1, f->esp);
 
+  thread_remove_mapped_file (mapping);
 }
