@@ -464,18 +464,34 @@ h_mmap (struct intr_frame *f)
   int fd = *get_argument (1, f->esp);
   void *addr = get_argument (2, f->esp);
 
-  //TODO - not sure if these should kill the process or just return -1
+  //TODO - not sure if this should kill the process or just return -1
   if (fd == STDIN_FILENO || fd == STDOUT_FILENO)
     {
       /* Error: console input and output are not mappable. */
       kill_process ();
     }
-  if (addr == 0)
+  if (*((int*) addr) == 0)
     {
-      /* Error: Pintos assumes page 0 is not mapped. */
-      kill_process ();
+      /* Error: Pintos assumes virtual address 0 is not mapped. */
+      f->eax = -1;
+      return;
     }
 
+  struct file *open_file = thread_get_open_file (fd);
+  if (open_file == NULL)
+    {
+      /* Error: invalid FD. */
+      f->eax = -1;
+      return;
+    }
+  
+  lock_acquire (&filesys_lock);
+  struct file *mapped_file = file_reopen (open_file);
+  lock_release (&filesys_lock);
+  int mapping_id = thread_add_mapped_file (mapped_file);
+  
+  /* Return the mapping ID. */
+  f->eax = mapping_id;
 }
 
 /* The munmap system call. */

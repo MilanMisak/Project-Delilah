@@ -219,4 +219,6 @@ struct file *thread_get_open_file (int fd);
 void thread_close_open_file (int fd);
 #endif
 
+int thread_add_mapped_file (struct file *file);
+
 #endif /* threads/thread.h */

@@ -1091,4 +1091,12 @@ thread_close_open_file (int fd)
         }
     }
 }
+
+/* Adds a memory mapped file to the current process. */
+int
+thread_add_mapped_file (struct file *file)
+{
+  //TODO - thread_add_mapped_file
+  return 5;
+}
 #endif
