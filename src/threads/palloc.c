@@ -9,7 +9,9 @@
 #include <string.h>
 #include "threads/loader.h"
 #include "threads/synch.h"
+#include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "vm/frame.h"
 
 /* Page allocator.  Hands out memory in page-size (or
    page-multiple) chunks.  See malloc.h for an allocator that
@@ -93,12 +95,56 @@ palloc_get_multiple (enum palloc_flags flags, size_t page_cnt)
     }
   else 
     {
-      if (flags & PAL_ASSERT)
-        PANIC ("palloc_get: out of pages");
+      /* if (flags & PAL_ASSERT)
+        PANIC ("palloc_get: out of pages"); */
+        if (PAL_USER && page_cnt == 1)
+          {
+           /* Find a frame not belonging to the current thread*/
+           int start = -1;
+           do {
+             start++;
+             page_idx = bitmap_scan (pool->used_map, start, 1, true);
+             pages = pool->base + PGSIZE * page_idx;
+           } while (frame_lookup (pages)->owner == thread_current ());
+      
+           /* Store the page in swap, remove the frame*/
+           if (frame_lookup (pages)->owner != thread_current ())
+             {
+               page_create (frame_lookup (pages));
+               bitmap_flip (pool->used_map, page_idx);
+             }
+          }
+        else
+          if (flags && PAL_ASSERT)
+            PANIC ("palloc_get: out of pages");
     }
 
   return pages;
 }
+
+/* Made this function to get contiguous frames that dont belong to the thread,
+   I dont think its needed :( */
+/*static void *
+get_contiguous_frames (size_t page_cnt)
+{
+  size_t start = 0;
+  while (start < bitmap_size (user_pool.used_map))
+    {
+      size_t idx = bitmap_scan (user_pool.used_map, start, page_cnt, 
+                true);
+      unsigned int j;
+      for (j = 0; j < page_cnt; j++)
+        {
+          void *addr = user_pool.base + PGSIZE * j;
+          struct frame *frame = frame_lookup (addr);
+          if (frame->owner == thread_current ())
+            break;
+        }
+        if (j == page_cnt)
+        return user_pool.base + PGSIZE * idx;
+    }
+    PANIC ("palloc_get: out of pages");
+}*/
 
 /* Obtains a single free page and returns its kernel virtual
    address.
