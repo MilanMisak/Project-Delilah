@@ -22,7 +22,7 @@ struct frame *frame_lookup (void *addr);
    into the table. */
 void frame_insert (void *faddr, void *uaddr, bool write);
 
-//TODO - why no comment?
+/* Removes and returns a frame from the frame table. */
 struct frame* frame_remove (void *);
 
 /* Hash function for frames. */
@@ -32,6 +32,6 @@ unsigned frame_hash_func (const struct hash_elem *e, void *aux);
 bool frame_less_func (const struct hash_elem *a, const struct hash_elem *b,
                       void *aux);
 
-/* Evicts a frame randomly, Creates a page and sends it to swap */
+/* Evicts a frame randomly, creates a page and sends it to swap */
 void frame_evict (void);
 #endif

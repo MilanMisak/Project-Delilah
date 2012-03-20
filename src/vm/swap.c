@@ -43,7 +43,8 @@ swap_write_page (struct page *page)
     }  
 }
 
-void swap_read_page (struct page *page)
+void
+swap_read_page (struct page *page)
 {
   bitmap_flip (used_map, page->saddr);
 
@@ -55,3 +56,12 @@ void swap_read_page (struct page *page)
       buffer += 512;
     }
 }
+
+void
+swap_remove_page (struct page *page)
+{
+  bitmap_flip (used_map, page->saddr);
+  //TODO: freeing?
+}
+
+
