@@ -472,7 +472,7 @@ h_mmap (struct intr_frame *f)
     }
   if (*((int*) addr) == 0)
     {
-      /* Error: Pintos assumes page 0 is not mapped. */
+      /* Error: Pintos assumes virtual address 0 is not mapped. */
       f->eax = -1;
     }
 
