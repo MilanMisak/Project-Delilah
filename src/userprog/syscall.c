@@ -474,8 +474,24 @@ h_mmap (struct intr_frame *f)
     {
       /* Error: Pintos assumes virtual address 0 is not mapped. */
       f->eax = -1;
+      return;
     }
 
+  struct file *open_file = thread_get_open_file (fd);
+  if (open_file == NULL)
+    {
+      /* Error: invalid FD. */
+      f->eax = -1;
+      return;
+    }
+  
+  lock_acquire (&filesys_lock);
+  struct file *mapped_file = file_reopen (open_file);
+  lock_release (&filesys_lock);
+  int mapping_id = thread_add_mapped_file (mapped_file);
+  
+  /* Return the mapping ID. */
+  f->eax = mapping_id;
 }
 
 /* The munmap system call. */
