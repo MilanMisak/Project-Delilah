@@ -129,6 +129,8 @@ struct thread
     struct hash sup_page_table;         /* Supplemental page table. */
 #endif
 
+    struct list mapped_files;           /* List of files mapped to memory by
+                                           this process. */
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
@@ -164,6 +166,16 @@ struct open_file
     struct list_elem elem;              /* List element. */
   };
 #endif
+
+/* A file mapped to a memory location. */
+struct mapped_file
+  {
+    int mapping_id;                     /* A unique (per process) mapping ID. */
+    struct file *file;                  /* Pointer to the file struct. */
+    void *addr;                         /* Address at which the file is
+                                           mapped. */
+    struct list_elem elem;              /* List element. */
+  };
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
@@ -219,6 +231,7 @@ struct file *thread_get_open_file (int fd);
 void thread_close_open_file (int fd);
 #endif
 
-int thread_add_mapped_file (struct file *file);
+int thread_add_mapped_file (struct file *file, void *addr);
+void thread_remove_mapped_file (int mapping_id);
 
 #endif /* threads/thread.h */
