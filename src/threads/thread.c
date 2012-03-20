@@ -245,10 +245,12 @@ thread_create (const char *name, int priority,
   if (t == NULL)
     return TID_ERROR;
 
+
   /* Initialize thread. */
   init_thread (t, name, priority, thread_get_recent_cpu (),
                thread_get_nice ());
 
+  
   /* Assign the child struct */
   t->child = child;
 
@@ -257,8 +259,6 @@ thread_create (const char *name, int priority,
     t->priority = thread_calculate_priority (t); 
   tid = t->tid = allocate_tid ();
 
-  /* Initialize the supplemental page table */
-  hash_init (&t->sup_page_table, &page_hash_func, &page_less_func, NULL);
 
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack' 
@@ -281,6 +281,10 @@ thread_create (const char *name, int priority,
   sf = alloc_frame (t, sizeof *sf);
   sf->eip = switch_entry;
   sf->ebp = 0;
+
+  
+  /* Initialize the supplemental page table */
+  hash_init (&t->sup_page_table, &page_hash_func, &page_less_func, NULL);
 
   intr_set_level (old_level);
 
@@ -429,6 +433,21 @@ thread_exit (void)
 {
   ASSERT (!intr_context ());
 
+  struct thread *current = thread_current ();
+  struct list_elem *e;
+
+  /* Flush, close and free all memory mapped files. */
+  while (! list_empty (&current->mapped_files))
+    {
+      e = list_pop_front (&current->mapped_files);
+      struct mapped_file *mapped_file = list_entry (e, struct mapped_file, elem);
+      //TODO - flush changes
+  
+      file_close (mapped_file->file);
+      
+      free (mapped_file);
+    }
+
 #ifdef USERPROG
   /* Re-enable writing to this process's executable file. */
   enum intr_level old_level = intr_disable ();
@@ -450,8 +469,6 @@ thread_exit (void)
   
 
   /* Close all open files. */
-  struct thread *current = thread_current ();
-  struct list_elem *e;
   for (e = list_begin (&current->open_files); 
        e != list_end (&current->open_files);
        e = list_next (e))
@@ -478,7 +495,7 @@ thread_exit (void)
       free (open_file);
     }
 
-  palloc_free_page(current->args_copy);
+  palloc_free_page (current->args_copy);
 
   process_exit ();
 #endif
@@ -1155,6 +1172,7 @@ thread_remove_mapped_file (int mapping_id)
       if (mf->mapping_id == mapping_id)
         {
           list_remove (e);
+          //TODO - flush changes
           free (mf);
           return;
         }

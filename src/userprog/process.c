@@ -616,6 +616,5 @@ uninstall_page (void *kpage)
 {
   struct frame *removing = frame_remove (kpage);
   pagedir_clear_page (removing->owner->pagedir, removing->uaddr);
-  free (removing);
 }
 

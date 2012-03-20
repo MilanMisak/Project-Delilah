@@ -12,6 +12,7 @@
 /* Loads a page from the file system into memory */
 void page_filesys_load (struct page *upage, void *kpage);
 
+
 void
 page_load (struct page *upage)
 {
@@ -36,12 +37,12 @@ page_create (struct frame *frame)
   page->saddr = -1;
   page->uaddr = frame->uaddr;
   page->write = true;
-  
+ 
   /* Write the page to swap or filesys */
   page_write (page, frame);
 
   /* Destroy the frame */
-  frame_remove (frame->addr);
+  uninstall_page (frame->addr);
   free (frame);
 
   return page;
@@ -50,7 +51,6 @@ page_create (struct frame *frame)
 void
 page_write (struct page *upage, struct frame *frame)
 {
-  uninstall_page (frame->addr);
   hash_insert (&frame->owner->sup_page_table, &upage->hash_elem);
 
   if (upage->saddr != -1)
