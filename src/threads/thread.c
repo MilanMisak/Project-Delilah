@@ -433,14 +433,27 @@ thread_exit (void)
 {
   ASSERT (!intr_context ());
 
+  struct thread *current = thread_current ();
+  struct list_elem *e;
+
+  /* Flush, close and free all memory mapped files. */
+  while (! list_empty (&current->mapped_files))
+    {
+      e = list_pop_front (&current->mapped_files);
+      struct mapped_file *mapped_file = list_entry (e, struct mapped_file, elem);
+      //TODO - flush changes
+  
+      file_close (mapped_file->file);
+      
+      free (mapped_file);
+    }
+
 #ifdef USERPROG
   /* Re-enable writing to this process's executable file. */
   enum intr_level old_level = intr_disable ();
   file_close (thread_current ()->executable_file);
 
   /* Close all open files. */
-  struct thread *current = thread_current ();
-  struct list_elem *e;
   for (e = list_begin (&current->open_files); 
        e != list_end (&current->open_files);
        e = list_next (e))
@@ -467,7 +480,7 @@ thread_exit (void)
       free (open_file);
     }
 
-  palloc_free_page(current->args_copy);
+  palloc_free_page (current->args_copy);
 
   process_exit ();
 #endif
@@ -1144,6 +1157,7 @@ thread_remove_mapped_file (int mapping_id)
       if (mf->mapping_id == mapping_id)
         {
           list_remove (e);
+          //TODO - flush changes
           free (mf);
           return;
         }
