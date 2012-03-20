@@ -11,11 +11,11 @@
 
 struct page
   {
-   struct hash_elem hash_elem; /* Hash element for a supplemental page table */
-   uint8_t *uaddr;             /* Address of the page in user virtual memory.*/
-   int saddr;                  /* Index of the swap slot */
-   const char *name;           /* Name of the page if stored in filesys. */
-   bool write;                 /* Boolean to indicate read/write permissions.*/
+    struct hash_elem hash_elem; /* Hash elem. for a supplemental page table. */
+    uint8_t *uaddr;             /* Page address in user virtual memory. */
+    int saddr;                  /* Index of the swap slot */
+    const char *name;           /* Name of the page if stored in filesys. */
+    bool write;                 /* Indication of read/write permissions. */
   };
 
 /* Called when there is a page fault to load the relevant page back into
@@ -28,13 +28,13 @@ struct page * page_create (struct frame *frame);
    an unmodified file. */
 void page_write (uint32_t *pd, struct page *upage);
 
+/* Looks up a page in PAGE_TABLE specified by the virtual address
+   in UADDR. Returns NULL if no page is found. */
+struct page * page_lookup (struct hash *page_table, void *uaddr);
+
 unsigned page_hash_func (const struct hash_elem *e, void *aux);
 
 bool page_less_func (const struct hash_elem *a, const struct hash_elem *b,
                       void *aux);
-
-/* Looks up a page in PAGE_TABLE specified by the virtual address
-   in UADDR. Returns NULL if no page is found. */
-struct page * page_lookup (struct hash *page_table, void *uaddr);
 
 #endif

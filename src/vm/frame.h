@@ -15,19 +15,21 @@ struct frame
 /* Initializes the frame table. */
 void frame_init (void);
 
+/* Returns a frame when given a frame kernel virtual address. */
+struct frame *frame_lookup (void *addr);
+
+/* Given a frame virtual address, makes a frame struct and inserts it 
+   into the table. */
+void frame_insert (void *faddr, void *uaddr, bool write);
+
+//TODO - why no comment?
+struct frame* frame_remove (void *);
+
 /* Hash function for frames. */
 unsigned frame_hash_func (const struct hash_elem *e, void *aux);
 
 /* Function for ordering frames. */
 bool frame_less_func (const struct hash_elem *a, const struct hash_elem *b,
                       void *aux);
-
-/* Returns a frame when given a frame kernel virtual address. */
-struct frame *frame_lookup (void *addr);
-
-/* Given a frame virtual address, makes a frame struct and inserts it into the table. */
-void frame_insert (void *faddr, void *uaddr, bool write);
-
-struct frame* frame_remove (void *);
 
 #endif
