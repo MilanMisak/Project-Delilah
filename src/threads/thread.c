@@ -19,6 +19,7 @@
 #include "filesys/filesys.h"
 #include "userprog/process.h"
 #include "vm/page.h"
+#include "vm/swap.h"
 #endif
 
 /* Random value for struct thread's `magic' member.
@@ -461,7 +462,7 @@ thread_exit (void)
       struct page *p = hash_entry (hash_cur (&i), struct page, hash_elem);
 
       if (p->saddr != -1 )
-        swap_remove_page (p);
+        //swap_remove_page (p);
         //TODO: write contents back to memory if they've been changed?
 
       free (p);

@@ -36,7 +36,7 @@ page_create (struct frame *frame)
   struct page *page = malloc (sizeof (struct page));
   page->saddr = -1;
   page->uaddr = frame->uaddr;
-  page->write = true;
+  page->write = frame->write;
  
   /* Write the page to swap or filesys */
   page_write (page, frame);
@@ -48,7 +48,7 @@ page_create (struct frame *frame)
 
 void
 page_write (struct page *upage, struct frame *frame)
-{    
+{ 
   hash_insert (&frame->owner->sup_page_table, &upage->hash_elem);
   
   if (upage->saddr != -1)
