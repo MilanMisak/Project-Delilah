@@ -5,10 +5,11 @@
 
 struct frame
   {
-    void *addr;                    /* Kernel virtual address of the page. */
-    void *uaddr;                   /* Virtual address of the page. */
-    struct thread *owner;          /* Owner of the frame. */
-    struct hash_elem hash_elem;    /* Hash element in frame table. */
+    void *addr;                 /* Kernel virtual address of the page. */
+    void *uaddr;                /* Virtual address of the page. */
+    bool write;
+    struct thread *owner;       /* Owner of the frame. */
+    struct hash_elem hash_elem; /* Hash element in frame table. */
   };
 
 /* Initializes the frame table. */
@@ -17,9 +18,9 @@ void frame_init (void);
 /* Returns a frame when given a frame kernel virtual address. */
 struct frame *frame_lookup (void *addr);
 
-/* Given a frame virtual address, makes a frame struct and inserts
-   it into the table. */
-void frame_insert (void *faddr, void *uaddr);
+/* Given a frame virtual address, makes a frame struct and inserts it 
+   into the table. */
+void frame_insert (void *faddr, void *uaddr, bool write);
 
 //TODO - why no comment?
 struct frame* frame_remove (void *);

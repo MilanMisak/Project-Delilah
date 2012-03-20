@@ -26,11 +26,12 @@ frame_lookup (void *addr)
 }
 
 void
-frame_insert (void *faddr, void *uaddr)
+frame_insert (void *faddr, void *uaddr, bool write)
 {
   struct frame *f = malloc (sizeof (struct frame));
   f->addr = faddr;
   f->uaddr = uaddr;
+  f->write = write;
   f->owner = thread_current ();
   
   hash_insert (&frame_table, &f->hash_elem);

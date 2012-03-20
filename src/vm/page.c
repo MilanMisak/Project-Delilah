@@ -2,10 +2,13 @@
 #include <debug.h>
 #include <stddef.h>
 #include "devices/block.h"
-#include "userprog/pagedir.h"
-#include "vm/swap.h"
+#include "threads/malloc.h"
 #include "threads/palloc.h"
+#include "userprog/pagedir.h"
 #include "userprog/process.h"
+#include "vm/frame.h"
+#include "vm/swap.h"
+
 
 /* Loads a page from the file system into memory */
 void page_filesys_load (struct page *upage, void *kpage);
@@ -25,10 +28,29 @@ page_load (struct page *upage)
     page_filesys_load (upage, kpage);
 }
 
+
+struct page *
+page_create (struct frame *frame)
+{
+  /* Create the page struct */
+  struct page *page = malloc (sizeof page);
+  page->saddr = -1;
+  page->uaddr = frame->uaddr;
+  page->write = true;
+  
+  /* Write the page to swap or filesys */
+  page_write (frame->owner->pagedir, page);
+
+  /* Destroy the frame */
+  frame_remove (frame->addr);
+  free (frame);
+
+  return page;
+}
+
 void
 page_write (uint32_t *pd UNUSED, struct page *upage)
 {
-  //TODO - remove page from thread's page table or something
   if (upage->saddr != -1)
     swap_write_page (upage);
 }
