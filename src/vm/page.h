@@ -18,7 +18,7 @@ struct page
     struct file *file;          /* File to lazily load the page from. */
     int file_start_pos;         /* Starting position in the file to read
                                    the page from. */
-    int file_read_uytes;        /* How many bytes to read from the file. */
+    int file_read_bytes;        /* How many bytes to read from the file. */
     bool write;                 /* Indication of read/write permissions. */
     struct hash_elem hash_elem; /* Hash elem. for a supplemental page table. */
   };

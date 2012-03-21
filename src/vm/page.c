@@ -1,9 +1,14 @@
 #include "vm/page.h"
 #include <debug.h>
 #include <stddef.h>
+//TODO - remove stdio
+#include <stdio.h>
+#include <string.h>
 #include "devices/block.h"
+#include "filesys/file.h"
 #include "threads/malloc.h"
 #include "threads/palloc.h"
+#include "threads/vaddr.h"
 #include "userprog/process.h"
 #include "vm/frame.h"
 #include "vm/swap.h"
@@ -22,11 +27,39 @@ page_load (struct page *upage)
   /* Load the page into memory again.*/
   if (upage->saddr != -1)
     {
+      /* Load from swap. */
       swap_read_page (upage);
     }
   else
-    PANIC ("WE DON KNOW");
-    //page_filesys_load (upage, kpage);
+    {
+      /* Load from a file. */
+
+      /* Get a page of memory. */
+      uint8_t *kpage = palloc_get_page (PAL_USER);
+      if (kpage == NULL)
+        {
+          printf ("bad things happened\n");
+          thread_exit ();
+        }
+
+      /* Load this page. */
+      if (file_read (upage->file, kpage, upage->file_read_bytes)
+              != (int) upage->file_read_bytes)
+        {
+          palloc_free_page (kpage);
+          printf ("bad things happened\n");
+          thread_exit ();
+        }
+      memset (kpage + upage->file_read_bytes, 0, PGSIZE - upage->file_read_bytes);
+
+      /* Add the page to the process's address space. */
+      if (!install_page (upage, kpage, upage->write)) 
+        {
+          palloc_free_page (kpage);
+          printf ("bad things happened\n");
+          thread_exit ();
+        } 
+    }
 }
 
 
