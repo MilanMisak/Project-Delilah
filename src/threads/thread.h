@@ -235,6 +235,7 @@ void thread_close_open_file (int fd);
 
 int thread_add_mapped_file (struct file *file, void *addr, int size);
 void thread_remove_mapped_file (int mapping_id);
+struct mapped_file *thread_get_mapped_file (void *addr);
 bool thread_collides_with_mapped_files (void *addr, int size);
 
 #endif /* threads/thread.h */

@@ -1181,6 +1181,24 @@ thread_remove_mapped_file (int mapping_id)
     }
 }
 
+/* Returns a mapped_file struct of a file which is mapped at address ADDR. */
+struct mapped_file *
+thread_get_mapped_file (void *addr)
+{
+  struct thread *current = thread_current ();
+  struct list_elem *e;
+
+  for (e = list_begin (&current->mapped_files);
+       e != list_end (&current->mapped_files); e = list_next (e))
+    {
+      struct mapped_file *mf = list_entry (e, struct mapped_file, elem);
+      if (mf->addr == addr)
+        return mf;
+    }
+
+  return NULL;
+}
+
 /* Checks if a newly mapped file at virtual address ADDR of size
    SIZE would collide with files already mapped. */
 bool

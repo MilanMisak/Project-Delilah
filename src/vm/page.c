@@ -17,9 +17,11 @@
 /* Loads a page from the file system into memory */
 void page_filesys_load (struct page *upage, void *kpage);
 
+//TODO - comment
+static void page_load_from_mapped_file (struct page *upage, void *fault_addr);
 
 void
-page_load (struct page *upage)
+page_load (struct page *upage, void *fault_addr)
 {
   void *kpage = palloc_get_page (PAL_USER);
 
@@ -33,6 +35,12 @@ page_load (struct page *upage)
   else
     {
       /* Load from a file. */
+      if (upage->file == NULL)
+        {
+          /* Memory-mapped file. */
+          page_load_from_mapped_file (upage, fault_addr);
+          return;
+        }
 
       /* Get a page of memory. */
       uint8_t *kpage = palloc_get_page (PAL_USER);
@@ -63,6 +71,40 @@ page_load (struct page *upage)
     }
 }
 
+static void
+page_load_from_mapped_file (struct page *upage, void *fault_addr)
+{
+  /*void *orig_fault_addr = fault_addr;
+  printf ("lfmf fault_page: %p %p \n", fault_addr, orig_fault_addr);
+
+  struct mapped_file *mapped_file = thread_get_mapped_file (orig_fault_addr);
+  if (mapped_file == NULL)
+    return;
+
+  void *in_file_addr = (void *) (orig_fault_addr - mapped_file->addr);
+  uint8_t *buffer = palloc_get_page (PAL_USER);
+  if (buffer == NULL)
+    {
+      printf ("damn\n");
+    }
+  int bytes_read = file_read_at (mapped_file->file, buffer, PGSIZE,
+      (int) pg_round_down (in_file_addr));
+
+  printf ("before memcpy\n");
+  //memcpy (orig_fault_addr, buffer, bytes_read);
+  printf ("&1\n");
+  memset (upage->uaddr + bytes_read, 0, PGSIZE - bytes_read);
+  printf ("&2\n");
+  printf ("nearly there\n");
+*/
+  /* Add the page to the process's address space. */
+ /* if (!install_page (upage->uaddr, buffer, upage->write)) 
+    {
+      palloc_free_page (buffer);
+      printf ("bad things happened3\n");
+      thread_exit ();
+    }*/ 
+}
 
 void
 page_create (struct frame *frame)

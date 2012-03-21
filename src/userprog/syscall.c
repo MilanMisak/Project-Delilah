@@ -7,6 +7,7 @@
 #include "filesys/filesys.h"
 #include "lib/kernel/console.h"
 #include "threads/interrupt.h"
+#include "threads/malloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "userprog/process.h"
@@ -463,7 +464,7 @@ h_mmap (struct intr_frame *f)
 {
   /* Get FD and ADDR from the stack. */
   int fd = *get_argument (1, f->esp);
-  void *addr = get_argument (2, f->esp);
+  void *addr = (void *) *get_argument (2, f->esp);
 
   if (fd == STDIN_FILENO || fd == STDOUT_FILENO)
     {
@@ -471,7 +472,7 @@ h_mmap (struct intr_frame *f)
       f->eax = -1;
       return;
     }
-  int int_addr = *((int*) addr);
+  int int_addr = (int) addr;
   if (int_addr == 0 || int_addr % PGSIZE != 0)
     {
       /* Error: Pintos assumes virtual address 0 is not mapped, also
@@ -534,6 +535,23 @@ h_mmap (struct intr_frame *f)
   lock_acquire (&filesys_lock);
   struct file *mapped_file = file_reopen (open_file);
   lock_release (&filesys_lock);
+
+  /* Add pages to the page table. */
+  for (i = 0; i < file_size; i += PGSIZE)
+    {
+      struct page *page = malloc (sizeof (struct page));
+      if (page == NULL)
+      {
+        //TODO - do something here?
+        printf ("baaad\n");
+      }
+
+      page->uaddr = addr + i;
+      page->saddr = -1;
+      page->write = true;
+
+      hash_insert (&thread_current ()->sup_page_table, &page->hash_elem);
+    }
   
   /* Add file's mapping. */
   int mapping_id = thread_add_mapped_file (mapped_file, addr, file_size);

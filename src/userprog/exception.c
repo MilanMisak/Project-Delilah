@@ -1,10 +1,13 @@
 #include "userprog/exception.h"
 #include <inttypes.h>
 #include <stdio.h>
+#include "filesys/file.h"
+#include "lib/string.h"
 #include "userprog/gdt.h"
 #include "userprog/process.h"
 #include "threads/palloc.h"
 #include "threads/interrupt.h"
+#include "threads/malloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "vm/page.h"
@@ -164,12 +167,13 @@ page_fault (struct intr_frame *f)
   //kill (f);
 
 
+  struct thread *t = thread_current ();
   if (user)
-    thread_current ()->esp = f->esp;
+    t->esp = f->esp;
   
   if (is_user_vaddr (fault_addr))
     {
-     if (fault_addr > (thread_current ()->esp - 33))
+     if (fault_addr > (t->esp - 33))
      {
        void *kernel_addr = palloc_get_page (PAL_USER | PAL_ZERO);
        fault_addr = pg_round_down (fault_addr);
@@ -178,17 +182,77 @@ page_fault (struct intr_frame *f)
        return;
      }
      
-     // printf ("MOOOOO");
+      printf ("MOOOOO");
+      void *orig_fault_addr = fault_addr;
       fault_addr = pg_round_down (fault_addr);
-      struct page *fault_page = page_lookup (&thread_current ()->sup_page_table, fault_addr);
+
+      struct page *fault_page = page_lookup (&t->sup_page_table, fault_addr);
       if (fault_page != NULL && not_present)
         {
+          /* The fault page is in a supplemental page table. */
+
           //if (is_user_vaddr (fault_page->uaddr))
-        //    printf ("Oh no\n");
-          page_load (fault_page);
+            printf ("Oh no\n");
+          page_load (fault_page, orig_fault_addr);
           //printf ("Page loaded, nice \n");
           return;
         }
+ /*     else if (not_present)
+        {
+  printf ("fault_page: %p %p \n", fault_addr, orig_fault_addr);
+*/
+          /* Let's look in memory mapped files. */
+/*          struct mapped_file *mapped_file =
+              thread_get_mapped_file (orig_fault_addr);
+          printf ("not_present\n");
+          if (mapped_file != NULL)
+            {
+          printf ("not_present mapped_file\n");
+              //void *in_file_addr =
+                //  (void *) &(*((int *) orig_fault_addr - *((int *) mapped_file->addr)));
+              void *in_file_addr = (void *) (orig_fault_addr - mapped_file->addr);
+                  //(void *) &(*((int *) orig_fault_addr - *((int *) mapped_file->addr)));
+          printf ("1\n");
+              uint8_t *buffer = palloc_get_page (PAL_USER);
+              if (buffer == NULL)
+                {
+                  printf ("damn\n");
+                }
+          printf ("2 %i\n", PGSIZE);
+          int a = (int) pg_round_down (in_file_addr);
+          printf ("A: %i\n", a);
+              int bytes_read = file_read_at (mapped_file->file, buffer, PGSIZE,
+                  (int) pg_round_down (in_file_addr));
+          printf ("3 %i\n", bytes_read);
+*/
+  //            printf ("before malloc\n");
+/*              struct page *page = malloc (sizeof (struct page));
+              if (page == NULL)
+              {
+                //TODO - do something here?
+                printf ("baaad\n");
+              }
+              printf ("after malloc\n");
+
+              page->uaddr = orig_fault_addr;
+              page->saddr = -1;
+              page->write = true;
+
+              printf ("before insert\n");
+              hash_insert (&thread_current ()->sup_page_table, &page->hash_elem);
+              printf ("after insert\n");*/
+              //page_load (page);
+              
+    /*          memcpy (orig_fault_addr, buffer, bytes_read);
+              printf ("&1\n");
+              memset (orig_fault_addr + bytes_read, 0, PGSIZE - bytes_read);
+              printf ("&2\n");
+              palloc_free_page (buffer);
+              printf ("nearly there\n");
+*/
+/*              return;
+            }
+        }*/
     }
   //printf ("ARGH");
 
