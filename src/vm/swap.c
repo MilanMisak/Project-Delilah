@@ -24,7 +24,7 @@ swap_init (void)
   swap_device = block_get_role (BLOCK_SWAP);
 }
 
-void
+size_t
 swap_write_page (struct page *page)
 {
   size_t index = bitmap_scan_and_flip (used_map, 0, 1, false);
@@ -40,7 +40,8 @@ swap_write_page (struct page *page)
     {
       block_write (swap_device, sector, buffer);
       buffer += 512;
-    }  
+    } 
+  return index;
 }
 
 void

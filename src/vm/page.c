@@ -18,14 +18,16 @@ page_load (struct page *upage)
 {
   /*TODO - Get kpage.*/
   void *kpage = palloc_get_page (PAL_USER);
-  install_page (upage, kpage, upage->write);
+  install_page (upage->uaddr, kpage, upage->write);
 
   /* Load the page into memory again.*/
-  if (upage->saddr == -1)
-    swap_read_page (upage);
-    //page_swap_load (upage, kpage);
+  if (upage->saddr != -1)
+    {
+      swap_read_page (upage);
+    }
   else
-    page_filesys_load (upage, kpage);
+    PANIC ("WE DON KNOW");
+    //page_filesys_load (upage, kpage);
 }
 
 
@@ -49,10 +51,17 @@ page_create (struct frame *frame)
 void
 page_write (struct page *upage, struct frame *frame)
 { 
-  hash_insert (&frame->owner->sup_page_table, &upage->hash_elem);
-  
-  if (upage->saddr != -1)
-    swap_write_page (upage);
+  struct hash_elem *e = hash_insert (&frame->owner->sup_page_table, &upage->hash_elem);
+  //if (e == NULL) 
+    //printf ("inserted addr: %p\n", upage->uaddr);
+  //else
+    //printf ("arse: %p", upage->uaddr);
+
+  //if (upage->saddr != -1)
+  upage->saddr = swap_write_page (upage);
+  //printf ("it worked");
+  //else
+    //PANIC ("AAAEFFFFH");
 }
 
 void

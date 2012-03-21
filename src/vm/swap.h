@@ -5,7 +5,7 @@
 
 void swap_init (void);
 
-void swap_write_page (struct page *page);
+size_t swap_write_page (struct page *page);
 
 void swap_read_page (struct page *page);
 
