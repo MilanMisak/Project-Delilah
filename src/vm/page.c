@@ -58,7 +58,7 @@ page_write (struct page *upage, struct frame *frame)
     //printf ("arse: %p", upage->uaddr);
 
   //if (upage->saddr != -1)
-  upage->saddr = swap_write_page (upage);
+  //upage->saddr = swap_write_page (upage);
   //printf ("it worked");
   //else
     //PANIC ("AAAEFFFFH");
