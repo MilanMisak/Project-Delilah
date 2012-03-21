@@ -508,7 +508,7 @@ h_mmap (struct intr_frame *f)
       return;
     }
 
-  struct thread *t = thread_current ();
+  //TODO - check if this works
   struct hash sup_page_table = thread_current ()->sup_page_table; 
   int i;
   bool collision = false;
