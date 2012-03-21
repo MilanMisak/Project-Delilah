@@ -8,8 +8,6 @@
 #include "threads/vaddr.h"
 #include "vm/page.h"
 
-//TODO - Destroy the frame table (free memory) on exit;
-
 static struct hash frame_table; /* Frame table*/
 
 void
@@ -81,3 +79,17 @@ frame_evict ()
   page_create (evictee);
   bitmap_flip (user_pool->used_map, (index));
 }
+
+void
+frame_destroy (struct hash_elem *e, void *aux UNUSED)
+{
+  struct frame *f = hash_entry (e, struct frame, hash_elem);
+  free (f);
+}
+
+void
+frame_table_destroy ()
+{
+  hash_destroy (&frame_table, &frame_destroy);
+}
+
