@@ -33,6 +33,7 @@ page_load (struct page *upage)
   else
     {
       /* Load from a file. */
+ 
 
       /* Get a page of memory. */
       uint8_t *kpage = palloc_get_page (PAL_USER);
@@ -42,6 +43,7 @@ page_load (struct page *upage)
           thread_exit ();
         }
 
+      file_seek (upage->file, upage->file_start_pos);
       /* Load this page. */
       if (file_read (upage->file, kpage, upage->file_read_bytes)
               != (int) upage->file_read_bytes)

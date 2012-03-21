@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include "devices/block.h"
 #include "vm/frame.h"
-//#include "filesys/off_t.h"
+#include "filesys/off_t.h"
 
 
 struct page
@@ -16,7 +16,7 @@ struct page
     //TODO - remove the name
     const char *name;           /* Name of the page if stored in filesys. */
     struct file *file;          /* File to lazily load the page from. */
-    int file_start_pos;         /* Starting position in the file to read
+    off_t file_start_pos;         /* Starting position in the file to read
                                    the page from. */
     int file_read_bytes;        /* How many bytes to read from the file. */
     bool write;                 /* Indication of read/write permissions. */
