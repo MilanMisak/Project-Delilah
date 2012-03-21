@@ -182,7 +182,7 @@ page_fault (struct intr_frame *f)
        return;
      }
      
-      printf ("MOOOOO");
+      //printf ("MOOOOO");
       void *orig_fault_addr = fault_addr;
       fault_addr = pg_round_down (fault_addr);
 
@@ -192,10 +192,9 @@ page_fault (struct intr_frame *f)
           /* The fault page is in a supplemental page table. */
 
           //if (is_user_vaddr (fault_page->uaddr))
-            printf ("Oh no\n");
-          page_load (fault_page, orig_fault_addr);
+          if (page_load (fault_page, orig_fault_addr))
           //printf ("Page loaded, nice \n");
-          return;
+            return;
         }
  /*     else if (not_present)
         {

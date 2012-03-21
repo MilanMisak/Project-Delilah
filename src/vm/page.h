@@ -25,7 +25,7 @@ struct page
 
 /* Called when there is a page fault to load the relevant page back into
    memory. */
-void page_load (struct page *upage, void *fault_addr);
+bool page_load (struct page *upage, void *fault_addr);
 
 void page_create (struct frame *frame);
 
