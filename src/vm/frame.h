@@ -34,4 +34,12 @@ bool frame_less_func (const struct hash_elem *a, const struct hash_elem *b,
 
 /* Evicts a frame randomly, creates a page and sends it to swap */
 void frame_evict (void);
+
+/* Destructor for a frame. */
+void frame_destroy (struct hash_elem *, void *);
+
+/* Destroys and frees the frame table. */
+//TODO: call on exit, or just move this code (it's like a line long)
+void frame_table_destroy (void);
+
 #endif
