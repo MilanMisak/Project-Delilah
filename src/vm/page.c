@@ -85,21 +85,21 @@ page_load_from_mapped_file (struct page *upage, void *fault_addr)
   if (buffer == NULL)
     {
       printf ("damn\n");
+      return false;
     }
   int bytes_read = file_read_at (mapped_file->file, buffer, PGSIZE,
       (int) pg_round_down (in_file_addr));
 
-  //memcpy (orig_fault_addr, buffer, bytes_read);
   memset (buffer + bytes_read, 0, PGSIZE - bytes_read);
-  //memset (upage->uaddr + bytes_read, 0, PGSIZE - bytes_read);
 
   /* Add the page to the process's address space. */
   if (!install_page (upage->uaddr, buffer, upage->write)) 
     {
       palloc_free_page (buffer);
       printf ("bad things happened3\n");
-      thread_exit ();
+      return false;
     }
+
   return true;
 }
 
