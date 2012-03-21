@@ -455,7 +455,7 @@ thread_exit (void)
   file_close (thread_current ()->executable_file);
 
   /* Remove and free all pages used by the thread. */
-  struct hash_iterator i;
+  /*struct hash_iterator i;
   hash_first (&i, &thread_current ()->sup_page_table);
   while (hash_next (&i))
     {
@@ -466,7 +466,7 @@ thread_exit (void)
         //TODO: write contents back to memory if they've been changed?
 
       free (p);
-    }
+    }*/
 
   /* Close all open files. */
   for (e = list_begin (&current->open_files); 
