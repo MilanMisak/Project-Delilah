@@ -90,9 +90,9 @@ palloc_get_multiple (enum palloc_flags flags, size_t page_cnt)
         PANIC ("palloc_get: out of pages"); */
         if (PAL_USER && page_cnt == 1)
           {
-            frame_evict ();
+            /* frame_evict ();
             page_idx = bitmap_scan_and_flip (pool->used_map, 0, page_cnt, false);
-            pages = pool->base + PGSIZE * page_idx;
+            pages = pool->base + PGSIZE * page_idx; */
           }
         else
           if (flags & PAL_ASSERT)

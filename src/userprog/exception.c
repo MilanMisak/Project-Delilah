@@ -2,6 +2,8 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include "userprog/gdt.h"
+#include "userprog/process.h"
+#include "threads/palloc.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
@@ -163,19 +165,36 @@ page_fault (struct intr_frame *f)
 
 
  // printf ("fault_addr: %p\n", fault_addr);
-  struct page *fault_page = page_lookup (&thread_current ()->sup_page_table, fault_addr);
-  if (fault_page != NULL)
-   {
-     //printf ("Oh no\n");
-     page_load (fault_page);
-     //printf ("Page loaded, nice \n");
-     return;
-   }
-  //printf ("It wasnt in the page table");
-  
+  if (is_user_vaddr (fault_addr))
+    {
+
+     //printf ("wtf");
+     if (fault_addr > (f->esp - 33))
+     {
+       void *kernel_addr = palloc_get_page (PAL_USER | PAL_ZERO);
+       fault_addr = pg_round_down (fault_addr);
+       install_page (fault_addr, kernel_addr, true);
+       return;
+     }
+    // printf ("esp: %p\n", f->esp);
+     //printf ("fault_addr: %p", fault_addr);
+     //else 
+     //{
+     //}
 
 
-  //printf ("It went wrong \n");
+
+
+
+      struct page *fault_page = page_lookup (&thread_current ()->sup_page_table, fault_addr);
+      if (fault_page != NULL)
+        {
+          //printf ("Oh no\n");
+          page_load (fault_page);
+          //printf ("Page loaded, nice \n");
+          return;
+        }
+    }
 
 
   f->eip = (void *) f->eax;
