@@ -20,11 +20,11 @@ page_load (struct page *upage)
   install_page (upage, kpage, upage->write);
 
   /* Load the page into memory again.*/
-  if (upage->saddr == -1)
+  if (upage->saddr != -1)
     swap_read_page (upage);
     //page_swap_load (upage, kpage);
-  else
-    page_filesys_load (upage, kpage);
+ // else
+ //   page_filesys_load (upage, kpage);
 }
 
 
@@ -50,8 +50,8 @@ page_write (struct page *upage, struct frame *frame)
 { 
   hash_insert (&frame->owner->sup_page_table, &upage->hash_elem);
   
-  if (upage->saddr != -1)
-    swap_write_page (upage);
+ // if (upage->saddr != -1)
+   // swap_write_page (upage);
 }
 
 void
