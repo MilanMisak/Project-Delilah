@@ -178,16 +178,6 @@ page_fault (struct intr_frame *f)
   //printf ("It went wrong \n");
 
 
-  struct page *fault_page = page_lookup (&thread_current ()->sup_page_table, fault_addr);
-  if (fault_page != NULL)
-  {
-      //printf ("Oh no\n");
-      page_load (fault_page);
-      //printf ("Page loaded, nice \n");
-      return;
-  }
-
-
   f->eip = (void *) f->eax;
   f->eax = 0xffffffff;
  

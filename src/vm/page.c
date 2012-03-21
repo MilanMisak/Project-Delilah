@@ -50,12 +50,6 @@ page_create (struct frame *frame)
 void
 page_write (struct page *upage, struct frame *frame)
 { 
-<<<<<<< HEAD
-  hash_insert (&frame->owner->sup_page_table, &upage->hash_elem);
-  
- // if (upage->saddr != -1)
-   // swap_write_page (upage);
-=======
   struct hash_elem *e = hash_insert (&frame->owner->sup_page_table, &upage->hash_elem);
   //if (e == NULL) 
     //printf ("inserted addr: %p\n", upage->uaddr);
@@ -67,7 +61,6 @@ page_write (struct page *upage, struct frame *frame)
   //printf ("it worked");
   //else
     //PANIC ("AAAEFFFFH");
->>>>>>> poo
 }
 
 void
