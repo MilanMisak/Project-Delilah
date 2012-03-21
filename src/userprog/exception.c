@@ -176,16 +176,20 @@ page_fault (struct intr_frame *f)
        install_page (fault_addr, kernel_addr, true);
        return;
      }
-
+     
+      //printf ("MOOOOO");
+      fault_addr = pg_round_down (fault_addr);
       struct page *fault_page = page_lookup (&thread_current ()->sup_page_table, fault_addr);
       if (fault_page != NULL)
         {
-          printf ("Oh no\n");
+          //if (is_user_vaddr (fault_page->uaddr))
+            //printf ("Oh no\n");
           page_load (fault_page);
           //printf ("Page loaded, nice \n");
           return;
         }
     }
+  //printf ("ARGH");
 
 
   f->eip = (void *) f->eax;

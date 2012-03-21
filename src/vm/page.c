@@ -22,12 +22,12 @@ void
 page_load (struct page *upage)
 {
   void *kpage = palloc_get_page (PAL_USER);
-  install_page (upage->uaddr, kpage, upage->write);
 
   /* Load the page into memory again.*/
   if (upage->saddr != -1)
     {
       /* Load from swap. */
+      install_page (upage->uaddr, kpage, upage->write);
       swap_read_page (upage);
     }
   else
@@ -38,7 +38,7 @@ page_load (struct page *upage)
       uint8_t *kpage = palloc_get_page (PAL_USER);
       if (kpage == NULL)
         {
-          printf ("bad things happened\n");
+          printf ("bad things happened1\n");
           thread_exit ();
         }
 
@@ -47,16 +47,16 @@ page_load (struct page *upage)
               != (int) upage->file_read_bytes)
         {
           palloc_free_page (kpage);
-          printf ("bad things happened\n");
+          printf ("bad things happened2\n");
           thread_exit ();
         }
       memset (kpage + upage->file_read_bytes, 0, PGSIZE - upage->file_read_bytes);
-
+      
       /* Add the page to the process's address space. */
-      if (!install_page (upage, kpage, upage->write)) 
+      if (!install_page (upage->uaddr, kpage, upage->write)) 
         {
           palloc_free_page (kpage);
-          printf ("bad things happened\n");
+          printf ("bad things happened3\n");
           thread_exit ();
         } 
     }
