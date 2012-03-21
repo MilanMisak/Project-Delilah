@@ -2,6 +2,7 @@
    values are as they should be. */
 
 #include <string.h>
+#include <stdio.h>
 #include "tests/arc4.h"
 #include "tests/lib.h"
 #include "tests/main.h"
@@ -17,8 +18,10 @@ test_main (void)
   size_t i;
 
   /* Initialize to 0x5a. */
+  printf ("initialize %p\n", &buf);
   msg ("initialize");
   memset (buf, 0x5a, sizeof buf);
+  printf ("boom");
 
   /* Check that it's all 0x5a. */
   msg ("read pass");

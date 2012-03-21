@@ -10,6 +10,7 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "userprog/process.h"
+#include "vm/page.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -494,15 +495,37 @@ h_mmap (struct intr_frame *f)
 
   if (file_size == 0)
     {
-      /* Error: File size is zero bytes. */
+      /* Error: file size is zero bytes. */
       f->eax = -1;
       return;
     }
 
   if (thread_collides_with_mapped_files (addr, file_size))
     {
-      /* Virtual address space required by the potential new mapping
+      /* Error: virtual address space required by the potential new mapping
          collides with an existing mapping. */
+      f->eax = -1;
+      return;
+    }
+
+  struct thread *t = thread_current ();
+  struct hash sup_page_table = thread_current ()->sup_page_table; 
+  int i;
+  bool collision = false;
+  for (i = int_addr; i < int_addr + file_size; i += PGSIZE)
+    {
+      struct page *page = page_lookup (&sup_page_table, (void *) i); 
+      if (page != NULL)
+        {
+          collision = true;
+          break;
+        }
+    }
+
+  if (collision)
+    {
+      /* Error: required virtual address space collides with existing
+         data or code. */
       f->eax = -1;
       return;
     }
