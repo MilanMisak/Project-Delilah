@@ -127,10 +127,11 @@ struct thread
     char *args_copy;                    /* Pointer to arguments. */
 #endif
     
-    struct hash sup_page_table;        /* Supplemental page table. */
+    struct hash sup_page_table;         /* Supplemental page table. */
 
     struct list mapped_files;           /* List of files mapped to memory by
                                            this process. */
+    void * esp;                         /* Saved value for the stack pointer */
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */

@@ -164,27 +164,18 @@ page_fault (struct intr_frame *f)
   //kill (f);
 
 
- // printf ("fault_addr: %p\n", fault_addr);
+  if (user)
+    thread_current ()->esp = f->esp;
+  
   if (is_user_vaddr (fault_addr))
     {
-
-     //printf ("wtf");
-     if (fault_addr > (f->esp - 33))
+     if (fault_addr > (thread_current ()->esp - 33))
      {
        void *kernel_addr = palloc_get_page (PAL_USER | PAL_ZERO);
        fault_addr = pg_round_down (fault_addr);
        install_page (fault_addr, kernel_addr, true);
        return;
      }
-    // printf ("esp: %p\n", f->esp);
-     //printf ("fault_addr: %p", fault_addr);
-     //else 
-     //{
-     //}
-
-
-
-
 
       struct page *fault_page = page_lookup (&thread_current ()->sup_page_table, fault_addr);
       if (fault_page != NULL)
