@@ -13,7 +13,6 @@
 #include "vm/frame.h"
 #include "vm/swap.h"
 
-
 /* Loads a page from the file system into memory */
 void page_filesys_load (struct page *upage, void *kpage);
 
@@ -23,11 +22,14 @@ static bool page_load_from_mapped_file (struct page *upage, void *fault_addr);
 bool
 page_load (struct page *upage, void *fault_addr)
 {
-  void *kpage = palloc_get_page (PAL_USER);
+
+  //if (pagedir_get_page(thread_current()->pagedir,upage->uaddr)==NULL)
+  //  printf("already mapped :(\n");
 
   /* Load the page into memory again.*/
   if (upage->saddr != -1)
     {
+      void *kpage = palloc_get_page (PAL_USER);
       /* Load from swap. */
       install_page (upage->uaddr, kpage, upage->write);
       swap_read_page (upage);
@@ -45,8 +47,10 @@ page_load (struct page *upage, void *fault_addr)
       uint8_t *kpage = palloc_get_page (PAL_USER);
       if (kpage == NULL)
         {
-          printf ("bad things happened1\n");
-          thread_exit ();
+          frame_evict ();
+          //printf ("bad things happened1\n");
+          kpage = palloc_get_page (PAL_USER);
+          //thread_exit ();
         }
 
       /* Load this page. */
@@ -58,8 +62,8 @@ page_load (struct page *upage, void *fault_addr)
           printf ("bad things happened2\n");
           thread_exit ();
         }
+
       memset (kpage + upage->file_read_bytes, 0, PGSIZE - upage->file_read_bytes);
-      
       /* Add the page to the process's address space. */
       if (!install_page (upage->uaddr, kpage, upage->write)) 
         {
@@ -113,7 +117,6 @@ page_create (struct frame *frame)
   page->write = frame->write;
  
   /* Write the page to swap or filesys */
-  page_write (page, frame);
 
   /* Destroy the frame */
   uninstall_page (frame->addr);
