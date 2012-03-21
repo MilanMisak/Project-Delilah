@@ -38,8 +38,12 @@ page_load (struct page *upage)
       uint8_t *kpage = palloc_get_page (PAL_USER);
       if (kpage == NULL)
         {
-          printf ("bad things happened1\n");
-          thread_exit ();
+          //printf ("bad things happened1\n");
+          frame_evict ();
+          //printf ("bad things happened1\n");
+          kpage = palloc_get_page (PAL_USER);
+          //printf ("bad things happened1\n");
+          //thread_exit ();
         }
 
       /* Load this page. */

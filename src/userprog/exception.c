@@ -173,6 +173,14 @@ page_fault (struct intr_frame *f)
      {
        void *kernel_addr = palloc_get_page (PAL_USER | PAL_ZERO);
        fault_addr = pg_round_down (fault_addr);
+       
+       /* Insert page into supplementary page table */
+       struct page *page = malloc (sizeof (struct page));
+       page->uaddr = fault_addr;
+       page->saddr = -1;
+       page->write = true;
+       hash_insert (&thread_current ()->sup_page_table, &page->hash_elem);
+
        install_page (fault_addr, kernel_addr, true);
        //printf ("weird stack bollocks\n");
        return;
