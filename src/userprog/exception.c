@@ -173,8 +173,7 @@ page_fault (struct intr_frame *f)
   
   if (is_user_vaddr (fault_addr))
     {
-      void *orig_fault_addr = fault_addr;
-      fault_addr = pg_round_down (fault_addr);
+      void *fault_addr_rounded_down = pg_round_down (fault_addr);
       
       if (fault_addr > (t->esp - 33))
         {
@@ -187,12 +186,12 @@ page_fault (struct intr_frame *f)
           page->write = true;
           hash_insert (&t->sup_page_table, &page->hash_elem);
 
-          install_page (fault_addr, kernel_addr, true);
+          install_page (fault_addr_rounded_down, kernel_addr, true);
           return;
         }
 
-      struct page *fault_page = page_lookup (&t->sup_page_table, fault_addr);
-      if (fault_page != NULL && not_present && page_load (fault_page, orig_fault_addr))
+      struct page *fault_page = page_lookup (&t->sup_page_table, fault_addr_rounded_down);
+      if (fault_page != NULL && not_present && page_load (fault_page, fault_addr))
         return;
     }
 
