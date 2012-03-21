@@ -71,11 +71,13 @@ frame_evict ()
   struct frame *evictee;  
   int frame_table_size = hash_size (&frame_table);
   int index;
-  
-  index = random_ulong () % (frame_table_size - 1);
-  void *i = user_pool->base + PGSIZE * index;
-  evictee = frame_lookup (i);
-  
+ 
+  do {
+    index = (random_ulong () % (frame_table_size - 1)) + 1;
+    void *i = user_pool->base + PGSIZE * index;
+    evictee = frame_lookup (i);
+  } while (evictee == NULL);
+
   page_create (evictee);
   bitmap_flip (user_pool->used_map, (index));
 }

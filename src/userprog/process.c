@@ -580,7 +580,16 @@ setup_stack (void **esp)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
+       {
+        /* Insert into supplementary page table */
+        struct page *page = malloc (sizeof (struct page));
+        page->uaddr = ((uint8_t *) PHYS_BASE) - PGSIZE;
+        page->saddr = -1;
+        page->write = true;
+        hash_insert (&thread_current ()->sup_page_table, &page->hash_elem);
+        
         *esp = PHYS_BASE;
+       }
       else
         palloc_free_page (kpage);
     }
