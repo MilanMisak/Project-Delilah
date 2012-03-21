@@ -16,7 +16,6 @@ void page_filesys_load (struct page *upage, void *kpage);
 void
 page_load (struct page *upage)
 {
-  /*TODO - Get kpage.*/
   void *kpage = palloc_get_page (PAL_USER);
   install_page (upage->uaddr, kpage, upage->write);
 
