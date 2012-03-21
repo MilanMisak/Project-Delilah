@@ -11,11 +11,16 @@
 
 struct page
   {
-    struct hash_elem hash_elem; /* Hash elem. for a supplemental page table. */
     uint8_t *uaddr;             /* Page address in user virtual memory. */
-    int saddr;                  /* Index of the swap slot */
+    int saddr;                  /* Index of the swap slot. */
+    //TODO - remove the name
     const char *name;           /* Name of the page if stored in filesys. */
+    struct file *file;          /* File to lazily load the page from. */
+    int file_start_pos;         /* Starting position in the file to read
+                                   the page from. */
+    int file_read_uytes;        /* How many bytes to read from the file. */
     bool write;                 /* Indication of read/write permissions. */
+    struct hash_elem hash_elem; /* Hash elem. for a supplemental page table. */
   };
 
 /* Called when there is a page fault to load the relevant page back into
