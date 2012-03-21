@@ -160,7 +160,7 @@ page_fault (struct intr_frame *f)
           fault_addr,
           not_present ? "not present" : "rights violation",
           write ? "writing" : "reading",
-          user ? "user" : "kernel"); */
+          user ? "user" : "kernel");*/
   //kill (f);
 
 
@@ -169,18 +169,18 @@ page_fault (struct intr_frame *f)
   
   if (is_user_vaddr (fault_addr))
     {
-     if (fault_addr > (thread_current ()->esp - 33))
-     {
-       void *kernel_addr = palloc_get_page (PAL_USER | PAL_ZERO);
-       fault_addr = pg_round_down (fault_addr);
-       install_page (fault_addr, kernel_addr, true);
-       return;
-     }
+      if (fault_addr > (thread_current ()->esp - 33))
+        {
+          void *kernel_addr = palloc_get_page (PAL_USER | PAL_ZERO);
+          fault_addr = pg_round_down (fault_addr);
+          install_page (fault_addr, kernel_addr, true);
+          return;
+        }
      
       //printf ("MOOOOO");
       fault_addr = pg_round_down (fault_addr);
       struct page *fault_page = page_lookup (&thread_current ()->sup_page_table, fault_addr);
-      if (fault_page != NULL)
+      if (fault_page != NULL && not_present)
         {
           //if (is_user_vaddr (fault_page->uaddr))
             //printf ("Oh no\n");

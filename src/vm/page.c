@@ -13,7 +13,6 @@
 #include "vm/frame.h"
 #include "vm/swap.h"
 
-
 /* Loads a page from the file system into memory */
 void page_filesys_load (struct page *upage, void *kpage);
 
@@ -22,6 +21,9 @@ void
 page_load (struct page *upage)
 {
   void *kpage = palloc_get_page (PAL_USER);
+
+  //if (pagedir_get_page(thread_current()->pagedir,upage->uaddr)==NULL)
+  //  printf("already mapped :(\n");
 
   /* Load the page into memory again.*/
   if (upage->saddr != -1)
@@ -42,7 +44,6 @@ page_load (struct page *upage)
           printf ("bad things happened1\n");
           thread_exit ();
         }
-
       file_seek (upage->file, upage->file_start_pos);
       /* Load this page. */
       if (file_read (upage->file, kpage, upage->file_read_bytes)
@@ -52,8 +53,8 @@ page_load (struct page *upage)
           printf ("bad things happened2\n");
           thread_exit ();
         }
+
       memset (kpage + upage->file_read_bytes, 0, PGSIZE - upage->file_read_bytes);
-      
       /* Add the page to the process's address space. */
       if (!install_page (upage->uaddr, kpage, upage->write)) 
         {
