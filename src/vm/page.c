@@ -35,7 +35,6 @@ page_load (struct page *upage)
   else
     {
       /* Load from a file. */
- 
 
       /* Get a page of memory. */
       uint8_t *kpage = palloc_get_page (PAL_USER);
@@ -44,10 +43,11 @@ page_load (struct page *upage)
           printf ("bad things happened1\n");
           thread_exit ();
         }
-      file_seek (upage->file, upage->file_start_pos);
+
       /* Load this page. */
-      if (file_read (upage->file, kpage, upage->file_read_bytes)
-              != (int) upage->file_read_bytes)
+      if (file_read_at (upage->file, kpage, upage->file_read_bytes,
+              upage->file_start_pos)
+            != (int) upage->file_read_bytes)
         {
           palloc_free_page (kpage);
           printf ("bad things happened2\n");
@@ -87,13 +87,17 @@ void
 page_write (struct page *upage, struct frame *frame)
 { 
   struct hash_elem *e = hash_insert (&frame->owner->sup_page_table, &upage->hash_elem);
+  
   //if (e == NULL) 
     //printf ("inserted addr: %p\n", upage->uaddr);
   //else
     //printf ("arse: %p", upage->uaddr);
 
-  //if (upage->saddr != -1)
+  
+    //if (upage->saddr != -1)
+  
   upage->saddr = swap_write_page (upage);
+  
   //printf ("it worked");
   //else
     //PANIC ("AAAEFFFFH");

@@ -174,16 +174,17 @@ page_fault (struct intr_frame *f)
           void *kernel_addr = palloc_get_page (PAL_USER | PAL_ZERO);
           fault_addr = pg_round_down (fault_addr);
           install_page (fault_addr, kernel_addr, true);
+          //printf ("weird stack bollocks\n");
           return;
         }
      
-      //printf ("MOOOOO");
+     // printf ("MOOOOO");
       fault_addr = pg_round_down (fault_addr);
       struct page *fault_page = page_lookup (&thread_current ()->sup_page_table, fault_addr);
       if (fault_page != NULL && not_present)
         {
           //if (is_user_vaddr (fault_page->uaddr))
-            //printf ("Oh no\n");
+        //    printf ("Oh no\n");
           page_load (fault_page);
           //printf ("Page loaded, nice \n");
           return;

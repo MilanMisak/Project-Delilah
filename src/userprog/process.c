@@ -545,6 +545,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       if (page == NULL)
         {
           //TODO - do something here?
+          //printf ("baaad");
           return false;
         }
 
