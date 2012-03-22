@@ -71,7 +71,7 @@ frame_evict ()
   struct frame *evictee;  
   int frame_table_size = hash_size (&frame_table);
   int index;
- 
+  //TODO: only evict when frame's evictable == true
   do {
     index = (random_ulong () % (frame_table_size - 1)) + 1;
     void *i = user_pool->base + PGSIZE * index;
@@ -93,5 +93,25 @@ void
 frame_table_destroy ()
 {
   hash_destroy (&frame_table, &frame_destroy);
+}
+
+void
+frame_set_evictable (struct frame *f, bool new_evictable)
+{
+  f->evictable = new_evictable;
+}
+
+struct frame *
+frame_find_upage (uint8_t *uaddr)
+{
+  struct hash_iterator i;
+  hash_first (&i, &frame_table);
+  while (hash_next (&i))
+    {
+      struct frame *f = hash_entry (hash_cur(&i), struct frame, hash_elem);
+      if (f->uaddr == uaddr)
+        return f;
+    }
+  return NULL;
 }
 

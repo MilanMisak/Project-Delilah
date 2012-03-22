@@ -14,7 +14,7 @@ struct page
     uint8_t *uaddr;             /* Page address in user virtual memory. */
     int saddr;                  /* Index of the swap slot. */
     //TODO - remove the name
-    const char *name;           /* Name of the page if stored in filesys. */
+    //const char *name;           /* Name of the page if stored in filesys. */
     struct file *file;          /* File to lazily load the page from. */
     off_t file_start_pos;       /* Starting position in the file to read
                                    the page from. */

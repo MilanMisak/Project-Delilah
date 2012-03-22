@@ -10,6 +10,7 @@ struct frame
     bool write;
     struct thread *owner;       /* Owner of the frame. */
     struct hash_elem hash_elem; /* Hash element in frame table. */
+    bool evictable;             /* Used to implement pinning. */
   };
 
 /* Initializes the frame table. */
@@ -41,5 +42,10 @@ void frame_destroy (struct hash_elem *, void *);
 /* Destroys and frees the frame table. */
 //TODO: call on exit, or just move this code (it's like a line long)
 void frame_table_destroy (void);
+
+void frame_set_evictable (struct frame *, bool);
+
+/* Finds a frame, given a user virtual address */
+struct frame *frame_find_upage (uint8_t *);
 
 #endif

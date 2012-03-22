@@ -38,6 +38,8 @@ static void h_close    (struct intr_frame *f);
 static void h_mmap     (struct intr_frame *f);
 static void h_munmap   (struct intr_frame *f);
 
+void page_set_evictable (uint8_t *, bool);
+
 /* System call handlers array. */
 typedef void (*handler) (struct intr_frame *f);
 static handler (handlers[15]) = {&h_halt, &h_exit, &h_exec, &h_wait, &h_create,
@@ -569,3 +571,16 @@ h_munmap (struct intr_frame *f)
 
   thread_remove_mapped_file (mapping);
 }
+
+void
+page_set_evictable (uint8_t *uaddr, bool new_evictable)
+{
+  void *page_start = pg_round_down (uaddr);
+  printf("\nuaddr: %p\n\n", uaddr);
+  struct frame *f = frame_find_upage (page_start);
+  if (f != NULL)
+    frame_set_evictable (f, new_evictable);
+  else
+    printf ("\nwell that's not good (syscall.c:577)\n\n");
+}
+
