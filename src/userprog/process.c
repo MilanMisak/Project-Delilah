@@ -530,7 +530,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT (pg_ofs (upage) == 0);
   ASSERT (ofs % PGSIZE == 0);
 
-  file_seek (file, ofs);
+  //file_seek (file, ofs);
   int total_read_bytes = 0;
   while (read_bytes > 0 || zero_bytes > 0) 
     {
