@@ -47,22 +47,22 @@ swap_write_page (struct page *page)
 void
 swap_read_page (struct page *page)
 {
-  printf ("Start of swap_read_page\n");
+  //printf ("Start of swap_read_page\n");
   bitmap_flip (used_map, page->saddr);
-  printf ("Bitmap flipped\n");
-  printf ("uaddr: %p", page->uaddr);
+  //printf ("Bitmap flipped\n");
+  // printf ("uaddr: %p", page->uaddr);
   void *buffer = page->uaddr;
   unsigned int i;
-  printf ("Before reading loop\n");
+  //printf ("Before reading loop\n");
   for (i = 0; i < SECTORS_PER_PAGE; i++)
     {
-      printf ("Loop top\n");
+      //printf ("Loop top\n");
       block_read (swap_device, (page->saddr * SECTORS_PER_PAGE), buffer);
       buffer += 512;
-      printf ("Loop bottom\n");
+      //printf ("Loop bottom\n");
     }
  // page->saddr = -1;
-  printf ("After reading loop\n");
+  //printf ("After reading loop\n");
 }
 
 void

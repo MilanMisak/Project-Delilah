@@ -27,21 +27,21 @@ page_load (struct page *upage, void *fault_addr)
   /* Load the page into memory again.*/
   if (upage->saddr != -1)
     {
-      printf ("Page is in swap\n");
+     // printf ("Page is in swap\n");
       void *kpage = palloc_get_page (PAL_USER);
       /* Load from swap. */
       if (kpage == NULL)
         {
           frame_evict ();
-          printf ("A page was evicted\n");
+          //printf ("A page was evicted\n");
           kpage = palloc_get_page (PAL_USER);
           if (kpage == NULL)
               PANIC ("AAAAG");
         }
       install_page (upage->uaddr, kpage, upage->write);
-      printf ("Page was installed\n");
+      //printf ("Page was installed\n");
       swap_read_page (upage);
-      printf ("Page was read from swap\n");
+      //printf ("Page was read from swap\n");
     }
   else
     {
@@ -147,8 +147,9 @@ page_create (struct frame *frame)
     struct hash_elem *e = hash_insert (&frame->owner->sup_page_table, &page->hash_elem);
   }
   /* Write the page to swap or filesys */
-  page->saddr = swap_write_page (page);
-  printf ("saddr: %i\n", page->saddr);
+  if (page->write)
+    page->saddr = swap_write_page (page);
+  //printf ("saddr: %i\n", page->saddr);
   
   //page_write (page, frame);
   

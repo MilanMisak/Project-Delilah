@@ -159,11 +159,11 @@ page_fault (struct intr_frame *f)
   /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
-   printf ("Page fault at %p: %s error %s page in %s context.\n",
+  /* printf ("Page fault at %p: %s error %s page in %s context.\n",
           fault_addr,
           not_present ? "not present" : "rights violation",
           write ? "writing" : "reading",
-          user ? "user" : "kernel");
+          user ? "user" : "kernel"); */
   //kill (f);
 
 
@@ -175,10 +175,13 @@ page_fault (struct intr_frame *f)
     {
       void *fault_addr_rounded_down = pg_round_down (fault_addr);
       
-      if (fault_addr > (t->esp - 33))
+      struct page *fault_page =
+          page_lookup (&t->sup_page_table, fault_addr_rounded_down);
+      
+      if (fault_page == NULL && fault_addr > (t->esp - 33))
         {
           void *kernel_addr = palloc_get_page (PAL_USER | PAL_ZERO);
-
+            
           /* Insert page into supplementary page table */
           struct page *page = malloc (sizeof (struct page));
           page->uaddr = fault_addr;
@@ -190,8 +193,6 @@ page_fault (struct intr_frame *f)
           return;
         }
 
-      struct page *fault_page =
-          page_lookup (&t->sup_page_table, fault_addr_rounded_down);
       if (fault_page != NULL && not_present
             && page_load (fault_page, fault_addr))
         return;
