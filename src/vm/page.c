@@ -49,7 +49,7 @@ page_load (struct page *upage, void *fault_addr)
 
       /* Get a page of memory. */
       uint8_t *kpage = palloc_get_page (PAL_USER);
-      if (kpage == NULL)
+      while (kpage == NULL)
         {
           frame_evict ();
           kpage = palloc_get_page (PAL_USER);
