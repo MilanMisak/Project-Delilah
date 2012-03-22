@@ -72,6 +72,7 @@ frame_evict ()
   int frame_table_size = hash_size (&frame_table);
   int index;
   //TODO: only evict when frame's evictable == true
+  
   do {
     index = (random_ulong () % (frame_table_size - 1)) + 1;
     void *i = user_pool->base + PGSIZE * index;
@@ -79,7 +80,6 @@ frame_evict ()
   } while (evictee == NULL);
 
   page_create (evictee);
-  bitmap_flip (user_pool->used_map, (index));
 }
 
 void
