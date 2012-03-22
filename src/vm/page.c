@@ -18,7 +18,7 @@
 /* Loads a page from the file system into memory */
 void page_filesys_load (struct page *upage, void *kpage);
 
-//TODO - comment
+/* Called when loading a page from a mapped file into memory. */
 static bool page_load_from_mapped_file (struct page *upage, void *fault_addr);
 
 bool
@@ -58,6 +58,7 @@ page_load (struct page *upage, void *fault_addr)
         {
           frame_evict ();
           kpage = palloc_get_page (PAL_USER);
+          
           if (kpage == NULL)
               PANIC ("AAAAG");
         }
@@ -68,7 +69,7 @@ page_load (struct page *upage, void *fault_addr)
             != (int) upage->file_read_bytes)
         {
           palloc_free_page (kpage);
-          printf ("bad things happened2\n");
+          printf ("file not read properly (page.c:58)\n");
           thread_exit ();
         }
       memset (kpage + upage->file_read_bytes, 0, PGSIZE - upage->file_read_bytes);
@@ -77,7 +78,7 @@ page_load (struct page *upage, void *fault_addr)
       if (!install_page (upage->uaddr, kpage, upage->write)) 
         {
           palloc_free_page (kpage);
-          printf ("bad things happened3\n");
+          printf ("page not installed properly (page.c:67)\n");
           thread_exit ();
         } 
     }
@@ -94,7 +95,7 @@ page_load_from_mapped_file (struct page *upage, void *fault_addr)
   struct mapped_file *mapped_file = thread_get_mapped_file (orig_fault_addr);
   if (mapped_file == NULL)
   {
-    printf ("NOOOOO %p\n", orig_fault_addr);
+    printf ("no mapped file from %p (page.c:84)\n", orig_fault_addr);
     return false;
   }
 
@@ -102,11 +103,11 @@ page_load_from_mapped_file (struct page *upage, void *fault_addr)
   uint8_t *buffer = palloc_get_page (PAL_USER);
   if (buffer == NULL)
     {
-      printf ("damn\n");
+      printf ("palloc didn't palloc (page.c:92)\n");
       return false;
     }
   int bytes_read = file_read_at (mapped_file->file, buffer, PGSIZE,
-      (int) pg_round_down (in_file_addr));
+                                 (int) pg_round_down (in_file_addr));
 
   memset (buffer + bytes_read, 0, PGSIZE - bytes_read);
 
@@ -114,7 +115,7 @@ page_load_from_mapped_file (struct page *upage, void *fault_addr)
   if (!install_page (upage->uaddr, buffer, upage->write)) 
     {
       palloc_free_page (buffer);
-      printf ("bad things happened3\n");
+      printf ("page not installed correctly (page.c:104)\n");
       return false;
     }
 

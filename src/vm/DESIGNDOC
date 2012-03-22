@@ -51,7 +51,7 @@ when these pointers in the frame and page match up.
 >> kernel and user virtual addresses that alias a single frame, or
 >> alternatively how do you avoid the issue?
 
-//TODO: the code for this
+//TODO: the code for this?
 
 
 ---- SYNCHRONIZATION ----
@@ -59,7 +59,7 @@ when these pointers in the frame and page match up.
 >> A4: When two user processes both need a new frame at the same time,
 >> how are races avoided?
 
-//TODO: the code for this
+//TODO: the code for this?
 
 
 ---- RATIONALE ----
@@ -67,7 +67,7 @@ when these pointers in the frame and page match up.
 >> A5: Why did you choose the data structure(s) that you did for
 >> representing virtual-to-physical mappings?
 
-//TODO: also make sure this is right
+//TODO: make sure this is right
 We decided to use a hash table for this, as well as other data structures, due
 to the efficiency of the lookups. Also, with much of the code already provided,
 it was simple to create our own instances of the hash table, and to include a
@@ -91,7 +91,7 @@ hash_elem in the frame struct.
 >> B2: When a frame is required but none is free, some frame must be
 >> evicted.  Describe your code for choosing a frame to evict.
 
-//TODO: a better eviction algorithm
+//TODO: a better eviction algorithm?
 
 
 >> B3: When a process P obtains a frame that was previously used by a
@@ -174,7 +174,7 @@ not sure it is.
 >> memory subsystem.  Explain how the page fault and eviction
 >> processes differ between swap pages and other pages.
 
-//TODO: Finish these functions
+//TODO: Finish these functions?
 
 
 >> C3: Explain how you determine whether a new file mapping overlaps

@@ -154,7 +154,6 @@ start_process (void *args_)
   if_.esp -= 4;
   *((int *) if_.esp) = 0;
 
-
   /* Push pointers to ARGV elements on stack in reverse order. */
   for (i = argc - 1; i >= 0; i--)
     {
@@ -531,7 +530,6 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT (pg_ofs (upage) == 0);
   ASSERT (ofs % PGSIZE == 0);
 
-  file_seek (file, ofs);
   int total_read_bytes = 0;
   while (read_bytes > 0 || zero_bytes > 0) 
     {
@@ -545,7 +543,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       if (page == NULL)
         {
           //TODO - do something here?
-          //printf ("baaad");
+          printf ("baaad");
           return false;
         }
 
