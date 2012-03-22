@@ -9,9 +9,11 @@
 #include "threads/malloc.h"
 #include "threads/palloc.h"
 #include "threads/vaddr.h"
+#include "userprog/pagedir.h"
 #include "userprog/process.h"
 #include "vm/frame.h"
 #include "vm/swap.h"
+
 
 /* Loads a page from the file system into memory */
 void page_filesys_load (struct page *upage, void *kpage);
@@ -22,14 +24,11 @@ static bool page_load_from_mapped_file (struct page *upage, void *fault_addr);
 bool
 page_load (struct page *upage, void *fault_addr)
 {
-
-  //if (pagedir_get_page(thread_current()->pagedir,upage->uaddr)==NULL)
-  //  printf("already mapped :(\n");
+  void *kpage = palloc_get_page (PAL_USER);
 
   /* Load the page into memory again.*/
   if (upage->saddr != -1)
     {
-      void *kpage = palloc_get_page (PAL_USER);
       /* Load from swap. */
       install_page (upage->uaddr, kpage, upage->write);
       swap_read_page (upage);
@@ -47,10 +46,8 @@ page_load (struct page *upage, void *fault_addr)
       uint8_t *kpage = palloc_get_page (PAL_USER);
       if (kpage == NULL)
         {
-          frame_evict ();
-          //printf ("bad things happened1\n");
-          kpage = palloc_get_page (PAL_USER);
-          //thread_exit ();
+          printf ("bad things happened1\n");
+          thread_exit ();
         }
 
       /* Load this page. */
@@ -62,8 +59,8 @@ page_load (struct page *upage, void *fault_addr)
           printf ("bad things happened2\n");
           thread_exit ();
         }
-
       memset (kpage + upage->file_read_bytes, 0, PGSIZE - upage->file_read_bytes);
+      
       /* Add the page to the process's address space. */
       if (!install_page (upage->uaddr, kpage, upage->write)) 
         {
@@ -78,11 +75,16 @@ page_load (struct page *upage, void *fault_addr)
 static bool
 page_load_from_mapped_file (struct page *upage, void *fault_addr)
 {
+  //TODO - renaming things
   void *orig_fault_addr = fault_addr;
+  //printf ("MF: %p\n", fault_addr);
 
   struct mapped_file *mapped_file = thread_get_mapped_file (orig_fault_addr);
   if (mapped_file == NULL)
+  {
+    printf ("NOOOOO\n");
     return false;
+  }
 
   void *in_file_addr = (void *) (orig_fault_addr - mapped_file->addr);
   uint8_t *buffer = palloc_get_page (PAL_USER);
@@ -108,6 +110,17 @@ page_load_from_mapped_file (struct page *upage, void *fault_addr)
 }
 
 void
+page_write_to_mapped_file (struct file *file, void *addr, int file_size)
+{
+  int i;
+  for (i = 0; i < file_size; i += PGSIZE)
+    {
+      if (pagedir_is_dirty (thread_current ()->pagedir, addr + i))
+        file_write_at (file, addr + i, PGSIZE, i);
+    }
+}
+
+void
 page_create (struct frame *frame)
 {
   /* Create the page struct */
@@ -117,6 +130,7 @@ page_create (struct frame *frame)
   page->write = frame->write;
  
   /* Write the page to swap or filesys */
+  page_write (page, frame);
 
   /* Destroy the frame */
   uninstall_page (frame->addr);

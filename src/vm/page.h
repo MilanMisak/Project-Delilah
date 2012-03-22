@@ -27,6 +27,9 @@ struct page
    memory. */
 bool page_load (struct page *upage, void *fault_addr);
 
+//TODO - comment
+void page_write_to_mapped_file (struct file *file, void *addr, int file_size);
+
 void page_create (struct frame *frame);
 
 /* Writes a page to swap, or does nothing in the case of it being

@@ -441,12 +441,12 @@ thread_exit (void)
   while (! list_empty (&current->mapped_files))
     {
       e = list_pop_front (&current->mapped_files);
-      struct mapped_file *mapped_file = list_entry (e, struct mapped_file, elem);
-      //TODO - flush changes
-  
-      file_close (mapped_file->file);
+      struct mapped_file *mf = list_entry (e, struct mapped_file, elem);
+
+      page_write_to_mapped_file (mf->file, mf->addr, mf->size);
+      file_close (mf->file);
       
-      free (mapped_file);
+      free (mf);
     }
 
 #ifdef USERPROG
@@ -1174,7 +1174,7 @@ thread_remove_mapped_file (int mapping_id)
       if (mf->mapping_id == mapping_id)
         {
           list_remove (e);
-          //TODO - flush changes
+          page_write_to_mapped_file (mf->file, mf->addr, mf->size);
           free (mf);
           return;
         }
@@ -1193,6 +1193,7 @@ thread_get_mapped_file (void *addr)
     {
       struct mapped_file *mf = list_entry (e, struct mapped_file, elem);
       if (mf->addr == addr)
+      //if (mf->addr <= addr && addr < (mf->addr + mf->size))
         return mf;
     }
 
