@@ -82,7 +82,7 @@ page_load_from_mapped_file (struct page *upage, void *fault_addr)
   struct mapped_file *mapped_file = thread_get_mapped_file (orig_fault_addr);
   if (mapped_file == NULL)
   {
-    printf ("NOOOOO\n");
+    printf ("NOOOOO %p\n", orig_fault_addr);
     return false;
   }
 

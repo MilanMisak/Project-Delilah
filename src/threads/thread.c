@@ -1192,8 +1192,7 @@ thread_get_mapped_file (void *addr)
        e != list_end (&current->mapped_files); e = list_next (e))
     {
       struct mapped_file *mf = list_entry (e, struct mapped_file, elem);
-      if (mf->addr == addr)
-      //if (mf->addr <= addr && addr < (mf->addr + mf->size))
+      if (mf->addr <= addr && addr < (mf->addr + mf->size))
         return mf;
     }
 
