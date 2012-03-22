@@ -24,11 +24,11 @@ static bool page_load_from_mapped_file (struct page *upage, void *fault_addr);
 bool
 page_load (struct page *upage, void *fault_addr)
 {
-  void *kpage = palloc_get_page (PAL_USER);
 
   /* Load the page into memory again.*/
   if (upage->saddr != -1)
     {
+      void *kpage = palloc_get_page (PAL_USER);
       /* Load from swap. */
       install_page (upage->uaddr, kpage, upage->write);
       swap_read_page (upage);
@@ -46,8 +46,10 @@ page_load (struct page *upage, void *fault_addr)
       uint8_t *kpage = palloc_get_page (PAL_USER);
       if (kpage == NULL)
         {
-          printf ("bad things happened1\n");
-          thread_exit ();
+          frame_evict ();
+          kpage = palloc_get_page (PAL_USER);
+          //printf ("bad things happened1\n");
+          //thread_exit ();
         }
 
       /* Load this page. */
