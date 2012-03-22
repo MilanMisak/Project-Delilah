@@ -100,19 +100,13 @@ filesys_remove (const char *name)
 void
 filesys_lock_acquire (void)
 {
-  lock_acquire (&filesys_lock);
+  if (!lock_held_by_current_thread (&filesys_lock))
+    lock_acquire (&filesys_lock);
 }
 
 /* Releases filesystem lock. */
 void
 filesys_lock_release (void)
-{
-  lock_release (&filesys_lock);
-}
-
-/* In case the current thread owns the filesystem lock it gets released. */
-void
-filesys_lock_try_release (void)
 {
   if (lock_held_by_current_thread (&filesys_lock))
     lock_release (&filesys_lock);

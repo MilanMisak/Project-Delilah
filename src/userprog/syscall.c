@@ -45,13 +45,9 @@ static handler (handlers[15]) = {&h_halt, &h_exit, &h_exec, &h_wait, &h_create,
                                  &h_write, &h_seek, &h_tell, &h_close,
                                  &h_mmap, &h_munmap};
 
-static struct lock filesys_lock;
-
 void
 syscall_init (void) 
 {
-  lock_init (&filesys_lock);
-
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
@@ -147,9 +143,9 @@ h_exec (struct intr_frame *f)
   /* Get CMD_LINE from the stack. */
   char *cmd_line = (char *) *get_argument (1, f->esp);
 
-  lock_acquire (&filesys_lock);
+  filesys_lock_acquire ();
   tid_t tid = process_execute (cmd_line);
-  lock_release (&filesys_lock);
+  filesys_lock_release ();
 
   f->eax = tid;
   if (tid == TID_ERROR)
@@ -208,9 +204,9 @@ h_create (struct intr_frame *f)
   int initial_size = *get_argument (2, f->esp);
 
   /* Return TRUE if file gets created, FALSE otherwise. */
-  lock_acquire (&filesys_lock);
+  filesys_lock_acquire ();
   f->eax = filesys_create (file, initial_size);
-  lock_release (&filesys_lock);
+  filesys_lock_release ();
 }
 
 /* The remove system call. */
@@ -226,9 +222,9 @@ h_remove (struct intr_frame *f)
     }
 
   /* Return TRUE if file gets removed, FALSE otherwise. */
-  lock_acquire (&filesys_lock);
+  filesys_lock_acquire ();
   f->eax = filesys_remove (file);
-  lock_release (&filesys_lock);
+  filesys_lock_release ();
 }
 
 /* The open system call. */
@@ -244,9 +240,9 @@ h_open (struct intr_frame *f)
     }
  
   /* Try opening the file. */
-  lock_acquire (&filesys_lock);
+  filesys_lock_acquire ();
   struct file *opened_file = filesys_open (file);
-  lock_release (&filesys_lock);
+  filesys_lock_release ();
 
   if (opened_file == NULL)
     {
@@ -276,9 +272,9 @@ h_filesize (struct intr_frame *f)
     }
 
   /* Get file size in bytes. */
-  lock_acquire (&filesys_lock);
+  filesys_lock_acquire ();
   int size = file_length (file);
-  lock_release (&filesys_lock);
+  filesys_lock_release ();
 
   f->eax = size;
 }
@@ -324,9 +320,9 @@ h_read (struct intr_frame *f)
         }
 
       /* Try to read SIZE bytes from FILE to BUFFER. */
-      lock_acquire (&filesys_lock);
+      filesys_lock_acquire ();
       int bytes_read = file_read (file, buffer, size);
-      lock_release (&filesys_lock);
+      filesys_lock_release ();
 
       /* Return how many bytes were actually read. */
       f->eax = bytes_read;
@@ -387,9 +383,9 @@ h_write (struct intr_frame *f)
         }
 
       /* Try to write SIZE bytes from BUFFER to FILE. */
-      lock_acquire (&filesys_lock);  
+      filesys_lock_acquire ();  
       int bytes_written = file_write (file, buffer, size);
-      lock_release (&filesys_lock);  
+      filesys_lock_release ();  
 
       /* Return how many bytes were actually written. */
       f->eax = bytes_written;
@@ -418,9 +414,9 @@ h_seek (struct intr_frame *f)
       kill_process ();
     }
 
-  lock_acquire (&filesys_lock);
+  filesys_lock_acquire ();
   file_seek (file, position);
-  lock_release (&filesys_lock);
+  filesys_lock_release ();
 }
 
 /* The tell system call. */
@@ -438,9 +434,9 @@ h_tell (struct intr_frame *f)
       kill_process ();
     }
 
-  lock_acquire (&filesys_lock);
+  filesys_lock_acquire ();
   int position = file_tell (file);
-  lock_release (&filesys_lock);
+  filesys_lock_release ();
 
   /* Return the position of the next byte to be read or written. */
   f->eax = position;
@@ -453,9 +449,9 @@ h_close (struct intr_frame *f)
   /* Get FD from the stack. */
   int fd = *get_argument (1, f->esp);
   
-  lock_acquire (&filesys_lock);
+  filesys_lock_acquire ();
   thread_close_open_file (fd);
-  lock_release (&filesys_lock);
+  filesys_lock_release ();
 }
 
 /* The mmap system call. */
@@ -490,9 +486,9 @@ h_mmap (struct intr_frame *f)
     }
  
   /* Get file size. */
-  lock_acquire (&filesys_lock);
+  filesys_lock_acquire ();
   off_t file_size = file_length (open_file);
-  lock_release (&filesys_lock);
+  filesys_lock_release ();
 
   if (file_size == 0)
     {
@@ -532,9 +528,9 @@ h_mmap (struct intr_frame *f)
     }
   
   /* Reopen the mapped file. */
-  lock_acquire (&filesys_lock);
+  filesys_lock_acquire ();
   struct file *mapped_file = file_reopen (open_file);
-  lock_release (&filesys_lock);
+  filesys_lock_release ();
 
   /* Add pages to the page table. */
   for (i = 0; i < file_size; i += PGSIZE)

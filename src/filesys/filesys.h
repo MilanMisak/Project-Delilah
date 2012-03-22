@@ -19,6 +19,5 @@ bool filesys_remove (const char *name);
 
 void filesys_lock_acquire (void);
 void filesys_lock_release (void);
-void filesys_lock_try_release (void);
 
 #endif /* filesys/filesys.h */
