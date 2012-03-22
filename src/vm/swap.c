@@ -38,7 +38,7 @@ swap_write_page (struct page *page)
   unsigned int i;
   for (i = 0; i < SECTORS_PER_PAGE; i++) 
     {
-      block_write (swap_device, sector, buffer);
+      block_write (swap_device, sector + i, buffer);
       buffer += BLOCK_SECTOR_SIZE;
     } 
   return index;
@@ -52,7 +52,7 @@ swap_read_page (struct page *page)
   unsigned int i;
   for (i = 0; i < SECTORS_PER_PAGE; i++)
     {
-      block_read (swap_device, sector, buffer);
+      block_read (swap_device, sector + i, buffer);
       buffer += BLOCK_SECTOR_SIZE;
     }
   
