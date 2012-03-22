@@ -24,14 +24,24 @@ static bool page_load_from_mapped_file (struct page *upage, void *fault_addr);
 bool
 page_load (struct page *upage, void *fault_addr)
 {
-
   /* Load the page into memory again.*/
   if (upage->saddr != -1)
     {
+      printf ("Page is in swap\n");
       void *kpage = palloc_get_page (PAL_USER);
       /* Load from swap. */
+      if (kpage == NULL)
+        {
+          frame_evict ();
+          printf ("A page was evicted\n");
+          kpage = palloc_get_page (PAL_USER);
+          if (kpage == NULL)
+              PANIC ("AAAAG");
+        }
       install_page (upage->uaddr, kpage, upage->write);
+      printf ("Page was installed\n");
       swap_read_page (upage);
+      printf ("Page was read from swap\n");
     }
   else
     {
@@ -48,8 +58,8 @@ page_load (struct page *upage, void *fault_addr)
         {
           frame_evict ();
           kpage = palloc_get_page (PAL_USER);
-          //printf ("bad things happened1\n");
-          //thread_exit ();
+          if (kpage == NULL)
+              PANIC ("AAAAG");
         }
 
       /* Load this page. */
@@ -125,14 +135,24 @@ page_write_to_mapped_file (struct file *file, void *addr, int file_size)
 void
 page_create (struct frame *frame)
 {
-  /* Create the page struct */
-  struct page *page = malloc (sizeof (struct page));
-  page->saddr = -1;
-  page->uaddr = frame->uaddr;
-  page->write = frame->write;
- 
+  struct page *page = page_lookup (&frame->owner->sup_page_table, frame->uaddr);
+  if (page == NULL)
+  {
+    printf ("On second thought, this should never happen\n");
+    /* Create the page struct */
+    struct page *page = malloc (sizeof (struct page));
+    page->saddr = -1;
+    page->uaddr = frame->uaddr;
+    page->write = frame->write;
+    struct hash_elem *e = hash_insert (&frame->owner->sup_page_table, &page->hash_elem);
+  }
   /* Write the page to swap or filesys */
-  page_write (page, frame);
+  page->saddr = swap_write_page (page);
+  printf ("saddr: %i\n", page->saddr);
+  
+  //page_write (page, frame);
+  
+
 
   /* Destroy the frame */
   uninstall_page (frame->addr);
@@ -142,21 +162,6 @@ page_create (struct frame *frame)
 void
 page_write (struct page *upage, struct frame *frame)
 { 
-  struct hash_elem *e = hash_insert (&frame->owner->sup_page_table, &upage->hash_elem);
-  
-  //if (e == NULL) 
-    //printf ("inserted addr: %p\n", upage->uaddr);
-  //else
-    //printf ("arse: %p", upage->uaddr);
-
-  
-    //if (upage->saddr != -1)
-  
-  upage->saddr = swap_write_page (upage);
-  
-  //printf ("it worked");
-  //else
-    //PANIC ("AAAEFFFFH");
 }
 
 void
