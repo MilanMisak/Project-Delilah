@@ -125,8 +125,10 @@ start_process (void *args_)
     }
 
   /* Deny writing to this program's executable file. */
+  filesys_lock_acquire ();
   struct file *executable = filesys_open (file_name);
   file_deny_write (executable);
+  filesys_lock_release ();
   thread_current ()->executable_file = executable;
 
   /* Set up array of pointers to ARGV elements. */
@@ -367,7 +369,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
   process_activate ();
 
   /* Open executable file. */
+  filesys_lock_acquire ();
   file = filesys_open (file_name);
+  filesys_lock_release ();
   if (file == NULL) 
     {
       printf ("load: %s: open failed\n", file_name);
@@ -530,7 +534,6 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT (pg_ofs (upage) == 0);
   ASSERT (ofs % PGSIZE == 0);
 
-  file_seek (file, ofs);
   int total_read_bytes = 0;
   while (read_bytes > 0 || zero_bytes > 0) 
     {

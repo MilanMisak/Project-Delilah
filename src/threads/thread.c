@@ -444,7 +444,9 @@ thread_exit (void)
       struct mapped_file *mf = list_entry (e, struct mapped_file, elem);
 
       page_write_to_mapped_file (mf->file, mf->addr, mf->size);
+      filesys_lock_acquire ();
       file_close (mf->file);
+      filesys_lock_release ();
       
       free (mf);
     }
@@ -452,7 +454,9 @@ thread_exit (void)
 #ifdef USERPROG
   /* Re-enable writing to this process's executable file. */
   enum intr_level old_level = intr_disable ();
+  filesys_lock_acquire ();
   file_close (thread_current ()->executable_file);
+  filesys_lock_release ();
 
   /* Remove and free all pages used by the thread. */
   /*struct hash_iterator i;
@@ -474,7 +478,9 @@ thread_exit (void)
        e = list_next (e))
     {
       struct open_file *open_file = list_entry (e, struct open_file, elem);
+      filesys_lock_acquire ();
       file_close (open_file->file);
+      filesys_lock_release ();
     }
   intr_set_level (old_level);
 
@@ -496,6 +502,8 @@ thread_exit (void)
     }
 
   palloc_free_page (current->args_copy);
+
+  filesys_lock_release ();
 
   process_exit ();
 #endif
@@ -1117,7 +1125,9 @@ thread_close_open_file (int fd)
       struct open_file *of = list_entry (e, struct open_file, elem);
       if (of->fd == fd)
         {
+          filesys_lock_acquire ();
           file_close (of->file);
+          filesys_lock_release ();
           list_remove (e);
           free (of);
           return;

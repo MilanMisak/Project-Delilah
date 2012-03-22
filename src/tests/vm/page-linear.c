@@ -18,7 +18,7 @@ test_main (void)
   size_t i;
 
   /* Initialize to 0x5a. */
-  printf ("initialize %p\n", &buf);
+  msg ("initialize");
   memset (buf, 0x5a, sizeof buf);
 
   /* Check that it's all 0x5a. */
@@ -41,5 +41,6 @@ test_main (void)
   msg ("read pass");
   for (i = 0; i < SIZE; i++)
     if (buf[i] != 0x5a)
-      fail ("byte %zu != 0x5a", i);
+      fail ("byte %zu != 0x5a\nval = %x", i, buf[i]);
+      //fail ("byte %zu != 0x5a", i);
 }

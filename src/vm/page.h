@@ -27,7 +27,7 @@ struct page
    memory. */
 bool page_load (struct page *upage, void *fault_addr);
 
-/* Writes to file, from addr. */
+/* Writes page at address ADDR to a memory-mapped file of length FILE_SIZE. */
 void page_write_to_mapped_file (struct file *file, void *addr, int file_size);
 
 void page_create (struct frame *frame);
