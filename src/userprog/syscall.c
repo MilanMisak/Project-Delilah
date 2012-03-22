@@ -12,6 +12,7 @@
 #include "threads/vaddr.h"
 #include "userprog/process.h"
 #include "vm/page.h"
+#include "threads/palloc.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -38,10 +39,8 @@ static void h_close    (struct intr_frame *f);
 static void h_mmap     (struct intr_frame *f);
 static void h_munmap   (struct intr_frame *f);
 
-void page_set_evictable (void *, bool);
-bool page_get_evictable (void *);
-void page_set_evictable_no_error (void *, bool);
-bool page_get_evictable_no_error (void *);
+bool page_set_evictable (void *, bool);
+//bool page_get_evictable (void *);
 
 /* System call handlers array. */
 typedef void (*handler) (struct intr_frame *f);
@@ -148,9 +147,12 @@ h_exec (struct intr_frame *f)
   /* Get CMD_LINE from the stack. */
   char *cmd_line = (char *) *get_argument (1, f->esp);
 
+  bool old_evictable = page_set_evictable (cmd_line, true);
   filesys_lock_acquire ();
   tid_t tid = process_execute (cmd_line);
   filesys_lock_release ();
+  page_set_evictable (cmd_line, old_evictable);
+  
 
   f->eax = tid;
   if (tid == TID_ERROR)
@@ -209,9 +211,11 @@ h_create (struct intr_frame *f)
   int initial_size = *get_argument (2, f->esp);
 
   /* Return TRUE if file gets created, FALSE otherwise. */
+  bool old_evictable = page_set_evictable (file, true);
   filesys_lock_acquire ();
   f->eax = filesys_create (file, initial_size);
   filesys_lock_release ();
+  page_set_evictable (file, old_evictable);
 }
 
 /* The remove system call. */
@@ -227,9 +231,11 @@ h_remove (struct intr_frame *f)
     }
 
   /* Return TRUE if file gets removed, FALSE otherwise. */
+  bool old_evictable = page_set_evictable (file, true);
   filesys_lock_acquire ();
   f->eax = filesys_remove (file);
   filesys_lock_release ();
+  page_set_evictable (file, old_evictable);
 }
 
 /* The open system call. */
@@ -245,9 +251,11 @@ h_open (struct intr_frame *f)
     }
  
   /* Try opening the file. */
+  bool old_evictable = page_set_evictable (file, true);
   filesys_lock_acquire ();
   struct file *opened_file = filesys_open (file);
   filesys_lock_release ();
+  page_set_evictable (file, old_evictable);
 
   if (opened_file == NULL)
     {
@@ -260,6 +268,8 @@ h_open (struct intr_frame *f)
       f->eax = fd;
     }
 }
+
+//TODO: uncomment 'evictable' code in filesize, read, write, seek, mmap, see what fails
 
 /* The filesize system call. */
 static void
@@ -277,9 +287,11 @@ h_filesize (struct intr_frame *f)
     }
 
   /* Get file size in bytes. */
+  //bool old_evictable = page_set_evictable (file, true);
   filesys_lock_acquire ();
   int size = file_length (file);
   filesys_lock_release ();
+  //page_set_evictable (file, old_evictable);
 
   f->eax = size;
 }
@@ -325,9 +337,11 @@ h_read (struct intr_frame *f)
         }
 
       /* Try to read SIZE bytes from FILE to BUFFER. */
+      //bool old_evictable = page_set_evictable (file, true);
       filesys_lock_acquire ();
       int bytes_read = file_read (file, buffer, size);
       filesys_lock_release ();
+      //page_set_evictable (file, old_evictable);
 
       /* Return how many bytes were actually read. */
       f->eax = bytes_read;
@@ -388,9 +402,11 @@ h_write (struct intr_frame *f)
         }
 
       /* Try to write SIZE bytes from BUFFER to FILE. */
+      //bool old_evictable = page_set_evictable (file, true);
       filesys_lock_acquire ();  
       int bytes_written = file_write (file, buffer, size);
       filesys_lock_release ();  
+      //page_set_evictable (file, old_evictable);
 
       /* Return how many bytes were actually written. */
       f->eax = bytes_written;
@@ -419,9 +435,11 @@ h_seek (struct intr_frame *f)
       kill_process ();
     }
 
+  //bool old_evictable = page_set_evictable (file, true);
   filesys_lock_acquire ();
   file_seek (file, position);
   filesys_lock_release ();
+  //page_set_evictable (file, old_evictable);
 }
 
 /* The tell system call. */
@@ -439,9 +457,11 @@ h_tell (struct intr_frame *f)
       kill_process ();
     }
 
+  bool old_evictable = page_set_evictable (file, true);
   filesys_lock_acquire ();
   int position = file_tell (file);
   filesys_lock_release ();
+  page_set_evictable (file, old_evictable);
 
   /* Return the position of the next byte to be read or written. */
   f->eax = position;
@@ -454,9 +474,7 @@ h_close (struct intr_frame *f)
   /* Get FD from the stack. */
   int fd = *get_argument (1, f->esp);
   
-  filesys_lock_acquire ();
   thread_close_open_file (fd);
-  filesys_lock_release ();
 }
 
 /* The mmap system call. */
@@ -491,9 +509,11 @@ h_mmap (struct intr_frame *f)
     }
  
   /* Get file size. */
+  //bool old_evictable = page_set_evictable (open_file, true);
   filesys_lock_acquire ();
   off_t file_size = file_length (open_file);
   filesys_lock_release ();
+  //page_set_evictable (open_file, old_evictable);
 
   if (file_size == 0)
     {
@@ -533,9 +553,11 @@ h_mmap (struct intr_frame *f)
     }
   
   /* Reopen the mapped file. */
+  //old_evictable = page_set_evictable (open_file, true);
   filesys_lock_acquire ();
   struct file *mapped_file = file_reopen (open_file);
   filesys_lock_release ();
+  //page_set_evictable (open_file, old_evictable);
 
   /* Add pages to the page table. */
   for (i = 0; i < file_size; i += PGSIZE)
@@ -571,25 +593,52 @@ h_munmap (struct intr_frame *f)
   thread_remove_mapped_file (mapping);
 }
 
-/* Sets the frame which contains uaddr to be unevictable. */
-void
+/* Sets the frame which contains uaddr to be unevictable, and returns its old
+value. */
+bool
 page_set_evictable (void *uaddr, bool new_evictable)
 {
   void *page_start = pg_round_down (uaddr);
   struct frame *f = frame_find_upage (page_start);
   if (f != NULL)
-    f->evictable = new_evictable;
+    {
+      bool old_evictable = f->evictable;
+      f->evictable = new_evictable;
+      return old_evictable;
+    }
   else
     {
-      /* Invalid address: kill the thread. */
-      /* (would otherwise have happened in page_fault). */
-      printf ("%s: exit(%d)\n", thread_current ()->name, -1);
-      thread_exit ();
+      /* Handle it as a page fault would. */
+      struct thread *t = thread_current ();
+      struct page *fault_page =
+          page_lookup (&t->sup_page_table, page_start);
+      
+      if (fault_page == NULL && uaddr > (t->esp - 33))
+        {
+          void *kernel_addr = palloc_get_page (PAL_USER | PAL_ZERO);
+            
+          /* Insert page into supplementary page table */
+          struct page *page = malloc (sizeof (struct page));
+          page->uaddr = uaddr;
+          page->saddr = -1;
+          page->write = true;
+          hash_insert (&t->sup_page_table, &page->hash_elem);
+
+          install_page (page_start, kernel_addr, true);
+          return false;
+        }
+
+      if (fault_page != NULL && page_load (fault_page, uaddr))
+        return false;
     }
+
+  printf ("%s: exit(%d)\n", thread_current ()->name, -1);
+  thread_exit ();
+  return false;
 }
 
 /* Returns the boolean 'evictable' from the frame which contains uaddr. */
-bool
+/*bool
 page_get_evictable (void *uaddr)
 {
   void *page_start = pg_round_down (uaddr);
@@ -598,11 +647,32 @@ page_get_evictable (void *uaddr)
     return f->evictable;
   else
     {
-      /* Invalid address: kill the thread. */
-      /* (would otherwise have happened in page_fault). */
-      printf ("%s: exit(%d)\n", thread_current ()->name, -1);
-      thread_exit ();
-      return false;
-    }
-}
+      // Handle it as a page fault would.
+      struct thread *t = thread_current ();
+      struct page *fault_page =
+          page_lookup (&t->sup_page_table, page_start);
+      
+      if (fault_page == NULL && uaddr > (t->esp - 33))
+        {
+          void *kernel_addr = palloc_get_page (PAL_USER | PAL_ZERO);
+ 
+          // Insert page into supplementary page table.
+          struct page *page = malloc (sizeof (struct page));
+          page->uaddr = uaddr;
+          page->saddr = -1;
+          page->write = true;
+          hash_insert (&t->sup_page_table, &page->hash_elem);
 
+          install_page (page_start, kernel_addr, true);
+          return false;
+        }
+
+      if (fault_page != NULL && page_load (fault_page, uaddr))
+        return false;
+    }
+
+  printf ("%s: exit(%d)\n", thread_current ()->name, -1);
+  thread_exit ();
+  return false;
+}
+*/

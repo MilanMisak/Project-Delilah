@@ -194,7 +194,7 @@ page_fault (struct intr_frame *f)
         }
 
       if (fault_page != NULL && not_present
-            && page_load (fault_page, fault_addr))
+          && page_load (fault_page, fault_addr))
         return;
     }
 
