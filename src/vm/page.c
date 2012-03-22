@@ -132,25 +132,8 @@ page_create (struct frame *frame)
   if (upage->write)
     upage->saddr = swap_write_page (upage);
   uninstall_page (frame->addr);
+  palloc_free_page (frame->addr);
   free (frame);
-}
-
-void
-page_write (struct page *upage, struct frame *frame)
-{ 
-  
-  //if (e == NULL) 
-    //printf ("inserted addr: %p\n", upage->uaddr);
-  //else
-    //printf ("helpful message (page.c:150): %p", upage->uaddr);
-
-  
-    //if (upage->saddr != -1)
-  
-  
-  //printf ("it worked");
-  //else
-    //PANIC ("AAAEFFFFH");
 }
 
 void

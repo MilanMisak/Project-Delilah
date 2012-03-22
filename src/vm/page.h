@@ -32,10 +32,6 @@ void page_write_to_mapped_file (struct file *file, void *addr, int file_size);
 
 void page_create (struct frame *frame);
 
-/* Writes a page to swap, or does nothing in the case of it being
-   an unmodified file. */
-void page_write (struct page *upage, struct frame *frame);
-
 /* Looks up a page in PAGE_TABLE specified by the virtual address
    in UADDR. Returns NULL if no page is found. */
 struct page * page_lookup (struct hash *page_table, void *uaddr);

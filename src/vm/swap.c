@@ -46,9 +46,7 @@ swap_write_page (struct page *page)
 
 void
 swap_read_page (struct page *page)
-{
-  bitmap_flip (used_map, page->saddr);
-  
+{ 
   block_sector_t sector = page->saddr * SECTORS_PER_PAGE;
   void *buffer = page->uaddr;
   unsigned int i;
@@ -57,6 +55,8 @@ swap_read_page (struct page *page)
       block_read (swap_device, sector, buffer);
       buffer += BLOCK_SECTOR_SIZE;
     }
+  
+  bitmap_flip (used_map, page->saddr);
 }
 
 void
