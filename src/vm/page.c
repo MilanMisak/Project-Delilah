@@ -18,7 +18,8 @@
 /* Loads a page from the file system into memory */
 void page_filesys_load (struct page *upage, void *kpage);
 
-/* Called when loading a page from a mapped file into memory. */
+/* Tries to load a page that would be at FAULT_ADDR from
+   a memory-mapped file. */
 static bool page_load_from_mapped_file (struct page *upage, void *fault_addr);
 
 bool
