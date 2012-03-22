@@ -40,6 +40,8 @@ static void h_munmap   (struct intr_frame *f);
 
 void page_set_evictable (void *, bool);
 bool page_get_evictable (void *);
+void page_set_evictable_no_error (void *, bool);
+bool page_get_evictable_no_error (void *);
 
 /* System call handlers array. */
 typedef void (*handler) (struct intr_frame *f);
@@ -145,12 +147,11 @@ h_exec (struct intr_frame *f)
 {
   /* Get CMD_LINE from the stack. */
   char *cmd_line = (char *) *get_argument (1, f->esp);
-  bool old_evictable = page_get_evictable (cmd_line);
-  page_set_evictable (cmd_line, true);
+
   filesys_lock_acquire ();
   tid_t tid = process_execute (cmd_line);
   filesys_lock_release ();
-  page_set_evictable (cmd_line, old_evictable);
+
   f->eax = tid;
   if (tid == TID_ERROR)
     {
@@ -570,26 +571,38 @@ h_munmap (struct intr_frame *f)
   thread_remove_mapped_file (mapping);
 }
 
+/* Sets the frame which contains uaddr to be unevictable. */
 void
 page_set_evictable (void *uaddr, bool new_evictable)
 {
   void *page_start = pg_round_down (uaddr);
   struct frame *f = frame_find_upage (page_start);
   if (f != NULL)
-    frame_set_evictable (f, new_evictable);
+    f->evictable = new_evictable;
   else
-    printf ("\nwell that's not good (syscall.c:577)\n\n");
+    {
+      /* Invalid address: kill the thread. */
+      /* (would otherwise have happened in page_fault). */
+      printf ("%s: exit(%d)\n", thread_current ()->name, -1);
+      thread_exit ();
+    }
 }
 
+/* Returns the boolean 'evictable' from the frame which contains uaddr. */
 bool
 page_get_evictable (void *uaddr)
 {
   void *page_start = pg_round_down (uaddr);
   struct frame *f = frame_find_upage (page_start);
   if (f != NULL)
-    return frame_get_evictable (f);
+    return f->evictable;
   else
-    printf ("\nwell that's not good (syscall.c:577)\n\n");
-  return false;
+    {
+      /* Invalid address: kill the thread. */
+      /* (would otherwise have happened in page_fault). */
+      printf ("%s: exit(%d)\n", thread_current ()->name, -1);
+      thread_exit ();
+      return false;
+    }
 }
 
