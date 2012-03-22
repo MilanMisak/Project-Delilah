@@ -95,18 +95,6 @@ frame_table_destroy ()
   hash_destroy (&frame_table, &frame_destroy);
 }
 
-void
-frame_set_evictable (struct frame *f, bool new_evictable)
-{
-  f->evictable = new_evictable;
-}
-
-bool
-frame_get_evictable (struct frame *f)
-{
-  return f->evictable;
-}
-
 struct frame *
 frame_find_upage (uint8_t *uaddr)
 {
