@@ -30,6 +30,11 @@ page_load (struct page *upage, void *fault_addr)
     {
       /* Load from swap. */
       void *kpage = palloc_get_page (PAL_USER);
+      if (kpage == NULL)
+        {
+          frame_evict ();
+          kpage = palloc_get_page (PAL_USER);
+        }
       install_page (upage->uaddr, kpage, upage->write);
       swap_read_page (upage);
     }
@@ -48,8 +53,6 @@ page_load (struct page *upage, void *fault_addr)
         {
           frame_evict ();
           kpage = palloc_get_page (PAL_USER);
-          //printf ("palloc didn't palloc right (page.c:46)\n");
-          //thread_exit ();
         }
 
       /* Load this page. */
@@ -125,16 +128,9 @@ page_write_to_mapped_file (struct file *file, void *addr, int file_size)
 void
 page_create (struct frame *frame)
 {
-  /* Create the page struct */
-  struct page *page = malloc (sizeof (struct page));
-  page->saddr = -1;
-  page->uaddr = frame->uaddr;
-  page->write = frame->write;
- 
-  /* Write the page to swap or filesys */
-  page_write (page, frame);
-
-  /* Destroy the frame */
+  struct page *upage = page_lookup (&frame->owner->sup_page_table, frame->uaddr);
+  if (upage->write)
+    upage->saddr = swap_write_page (upage);
   uninstall_page (frame->addr);
   free (frame);
 }
@@ -142,7 +138,6 @@ page_create (struct frame *frame)
 void
 page_write (struct page *upage, struct frame *frame)
 { 
-  struct hash_elem *e = hash_insert (&frame->owner->sup_page_table, &upage->hash_elem);
   
   //if (e == NULL) 
     //printf ("inserted addr: %p\n", upage->uaddr);
@@ -152,7 +147,6 @@ page_write (struct page *upage, struct frame *frame)
   
     //if (upage->saddr != -1)
   
-  upage->saddr = swap_write_page (upage);
   
   //printf ("it worked");
   //else
