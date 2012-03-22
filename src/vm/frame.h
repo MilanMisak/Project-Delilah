@@ -45,6 +45,8 @@ void frame_table_destroy (void);
 
 void frame_set_evictable (struct frame *, bool);
 
+bool frame_get_evictable (struct frame *);
+
 /* Finds a frame, given a user virtual address */
 struct frame *frame_find_upage (uint8_t *);
 

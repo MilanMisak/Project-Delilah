@@ -38,7 +38,8 @@ static void h_close    (struct intr_frame *f);
 static void h_mmap     (struct intr_frame *f);
 static void h_munmap   (struct intr_frame *f);
 
-void page_set_evictable (uint8_t *, bool);
+void page_set_evictable (void *, bool);
+bool page_get_evictable (void *);
 
 /* System call handlers array. */
 typedef void (*handler) (struct intr_frame *f);
@@ -144,11 +145,12 @@ h_exec (struct intr_frame *f)
 {
   /* Get CMD_LINE from the stack. */
   char *cmd_line = (char *) *get_argument (1, f->esp);
-
+  bool old_evictable = page_get_evictable (cmd_line);
+  page_set_evictable (cmd_line, true);
   filesys_lock_acquire ();
   tid_t tid = process_execute (cmd_line);
   filesys_lock_release ();
-
+  page_set_evictable (cmd_line, old_evictable);
   f->eax = tid;
   if (tid == TID_ERROR)
     {
@@ -569,14 +571,25 @@ h_munmap (struct intr_frame *f)
 }
 
 void
-page_set_evictable (uint8_t *uaddr, bool new_evictable)
+page_set_evictable (void *uaddr, bool new_evictable)
 {
   void *page_start = pg_round_down (uaddr);
-  printf("\nuaddr: %p\n\n", uaddr);
   struct frame *f = frame_find_upage (page_start);
   if (f != NULL)
     frame_set_evictable (f, new_evictable);
   else
     printf ("\nwell that's not good (syscall.c:577)\n\n");
+}
+
+bool
+page_get_evictable (void *uaddr)
+{
+  void *page_start = pg_round_down (uaddr);
+  struct frame *f = frame_find_upage (page_start);
+  if (f != NULL)
+    return frame_get_evictable (f);
+  else
+    printf ("\nwell that's not good (syscall.c:577)\n\n");
+  return false;
 }
 
