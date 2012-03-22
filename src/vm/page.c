@@ -25,12 +25,11 @@ static bool page_load_from_mapped_file (struct page *upage, void *fault_addr);
 bool
 page_load (struct page *upage, void *fault_addr)
 {
-
   /* Load the page into memory again.*/
   if (upage->saddr != -1)
     {
-      void *kpage = palloc_get_page (PAL_USER);
       /* Load from swap. */
+      void *kpage = palloc_get_page (PAL_USER);
       install_page (upage->uaddr, kpage, upage->write);
       swap_read_page (upage);
     }
