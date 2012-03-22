@@ -61,7 +61,7 @@ swap_read_page (struct page *page)
       buffer += 512;
       printf ("Loop bottom\n");
     }
-  page->saddr = -1;
+ // page->saddr = -1;
   printf ("After reading loop\n");
 }
 
