@@ -171,7 +171,8 @@ struct open_file
 /* A file mapped to a memory location. */
 struct mapped_file
   {
-    int mapping_id;                     /* A unique (per process) mapping ID. */
+    int mapping_id;                     /* A unique (per process)
+                                           mapping ID. */
     struct file *file;                  /* Pointer to the file struct. */
     void *addr;                         /* Address at which the file is
                                            mapped. */

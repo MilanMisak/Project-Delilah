@@ -95,13 +95,12 @@ frame_evict ()
     evictee = frame_lookup (i);
   } while (evictee == NULL || !evictee->evictable);
 
-  struct page *upage = page_lookup (&evictee->owner->sup_page_table, evictee->uaddr);
-  //TODO - remove this shit
-  //lock_acquire (upage->access_lock);
-  //lock_release (upage->access_lock);
+  struct page *upage =
+      page_lookup (&evictee->owner->sup_page_table, evictee->uaddr);
   pagedir_clear_page (evictee->owner->pagedir, evictee->uaddr);
   
-  if (upage->write)
+  if (upage->write
+      && pagedir_is_dirty (evictee->owner->pagedir, evictee->uaddr))
     upage->saddr = swap_write_page (upage);
   frame_remove (evictee->addr);
   

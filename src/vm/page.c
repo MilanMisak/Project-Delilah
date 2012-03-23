@@ -14,9 +14,6 @@
 #include "vm/frame.h"
 #include "vm/swap.h"
 
-/* Loads a page from the file system into memory */
-void page_filesys_load (struct page *upage, void *kpage);
-
 /* Tries to load a page that would be at FAULT_ADDR from
    a memory-mapped file. */
 static bool page_load_from_mapped_file (struct page *upage, void *fault_addr);
@@ -63,7 +60,8 @@ page_load (struct page *upage, void *fault_addr)
           palloc_free_page (kpage);
           thread_exit ();
         }
-      memset (kpage + upage->file_read_bytes, 0, PGSIZE - upage->file_read_bytes);
+      memset (kpage + upage->file_read_bytes, 0,
+          PGSIZE - upage->file_read_bytes);
       
       /* Add the page to the process's address space. */
       if (!install_page (upage->uaddr, kpage, upage->write)) 
@@ -121,24 +119,6 @@ page_write_to_mapped_file (struct file *file, void *addr, int file_size)
       if (pagedir_is_dirty (thread_current ()->pagedir, addr + i))
         file_write_at (file, addr + i, PGSIZE, i);
     }
-}
-
-//TODO - remove
-void
-page_create (struct frame *frame)
-{
-  struct page *upage = page_lookup (&frame->owner->sup_page_table, frame->uaddr);
-  if (upage->write && pagedir_is_dirty (frame->owner->pagedir, frame->uaddr))
-    upage->saddr = swap_write_page (upage);
-  //uninstall_page (frame->addr);
-  palloc_free_page (frame->addr);
-  //free (frame);
-}
-
-void
-page_filesys_load (struct page *upage UNUSED, void *kpage UNUSED)
-{
-  //TODO - page_filesys_load
 }
 
 struct page *
