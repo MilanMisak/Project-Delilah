@@ -453,7 +453,6 @@ thread_exit (void)
 
 #ifdef USERPROG
   /* Re-enable writing to this process's executable file. */
-  enum intr_level old_level = intr_disable ();
   filesys_lock_acquire ();
   file_close (thread_current ()->executable_file);
   filesys_lock_release ();
@@ -472,6 +471,15 @@ thread_exit (void)
       free (p);
     }*/
 
+  /* Remove and free all pages used by the thread. */
+  struct hash_iterator i;
+  hash_first (&i, &thread_current ()->sup_page_table);
+  while (hash_next (&i))
+    {
+      struct page *p = hash_entry (hash_cur (&i), struct page, hash_elem);
+      frame_remove_by_upage (p->uaddr);
+    }
+
   /* Close all open files. */
   for (e = list_begin (&current->open_files); 
        e != list_end (&current->open_files);
@@ -482,7 +490,6 @@ thread_exit (void)
       file_close (open_file->file);
       filesys_lock_release ();
     }
-  intr_set_level (old_level);
 
   /* Free CHILDREN and OPEN_FILES. */
   while (! list_empty (&current->children))

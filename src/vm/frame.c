@@ -47,6 +47,17 @@ frame_remove (void *kpage)
   return removing;
 }
 
+void
+frame_remove_by_upage (void *upage)
+{
+  struct frame *f = frame_find_upage (upage);
+  if (f != NULL)
+    {
+      hash_delete (&frame_table, &f->hash_elem);
+      free (f);
+    }
+}
+
 unsigned
 frame_hash_func (const struct hash_elem *e, void *aux UNUSED) 
 {
@@ -72,7 +83,6 @@ frame_evict ()
   int frame_table_size = hash_size (&frame_table);
   int index;
   //TODO: only evict when frame's evictable == true
-  
   do {
     index = (random_ulong () % (frame_table_size - 1)) + 1;
     void *i = user_pool->base + PGSIZE * index;
