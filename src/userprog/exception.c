@@ -12,10 +12,6 @@
 #include "threads/vaddr.h"
 #include "vm/page.h"
 
-
-
-#define STACK_LIMIT (PHYS_BASE - (8 * 1024 * 1024))
-
 /* Number of page faults processed. */
 static long long page_fault_cnt;
 
@@ -184,11 +180,6 @@ page_fault (struct intr_frame *f)
       
       if (fault_page == NULL && fault_addr > (t->esp - 33))
         {
-           
-          /*  Exit the process if the stack exceeds 8mb */
-          if ((t->esp - 33) < STACK_LIMIT)
-              thread_exit ();
-          
           void *kernel_addr = palloc_get_page (PAL_USER | PAL_ZERO);
             
           /* Insert page into supplementary page table */
@@ -196,7 +187,6 @@ page_fault (struct intr_frame *f)
           page->uaddr = fault_addr;
           page->saddr = -1;
           page->write = true;
-          page->access_lock = malloc (sizeof (struct lock));
           hash_insert (&t->sup_page_table, &page->hash_elem);
 
           install_page (fault_addr_rounded_down, kernel_addr, true);

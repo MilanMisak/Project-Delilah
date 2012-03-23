@@ -27,7 +27,7 @@ void frame_insert (void *faddr, void *uaddr, bool write);
 /* Removes and returns a frame from the frame table. */
 struct frame* frame_remove (void *);
 
-//TODO - comment
+/* Removes a frame associated with the given user virtual address. */
 void frame_remove_by_upage (void *upage);
 
 /* Hash function for frames. */
