@@ -9,6 +9,7 @@
 #include "threads/vaddr.h"
 #include "userprog/pagedir.h"
 #include "vm/page.h"
+#include "vm/swap.h"
 
 static struct hash frame_table; /* Frame table*/
 
