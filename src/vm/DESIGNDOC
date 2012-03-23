@@ -39,20 +39,26 @@ the same - it was a faff last time)
 >> A2: In a few paragraphs, describe your code for locating the frame,
 >> if any, that contains the data of a given page.
 
-//TODO: make sure this is correct once the code is finished.
-Our solution to task 3 does not require a function for locating the frame which
-contains a given page. However, such a function would be relatively simple to
-write, as both frames and pages contain pointers to the user address of the
-page. Therefore, it should be easy to set up a hash table iterator to return
-when these pointers in the frame and page match up.
+We have a a hash table for each function called a sup_page_table (
+supplementary page table), consisting of page structs, this contains a user
+virtual address field.
 
+We also have a static frame table which is also a hash table containing
+frame structs. Each frame contains a user virtual address field.
+Entries in the frame table are created and destroyed to represent the 
+page structs in the frame table.
+
+To locate the frame that a page is in, we simply iterate through the 
+frame table to check which frame contains the same user address as a given
+page struct.
 
 >> A3: How does your code coordinate accessed and dirty bits between
 >> kernel and user virtual addresses that alias a single frame, or
 >> alternatively how do you avoid the issue?
 
 We avoid this issue by only accessing user memory through its user
-virtual address.
+virtual address. Except when writing to swap (The kernel virtual address is not
+written to, so the dirty bit will not be changed).
 
 
 ---- SYNCHRONIZATION ----
@@ -60,20 +66,20 @@ virtual address.
 >> A4: When two user processes both need a new frame at the same time,
 >> how are races avoided?
 
-There is a lock around the frame_evict () function, this means only
-one frame can be evicted at a time.
+There is a lock (eviction lock) around the frame_evict () function, this 
+means only one frame can be evicted at a time.
 
 ---- RATIONALE ----
 
 >> A5: Why did you choose the data structure(s) that you did for
 >> representing virtual-to-physical mappings?
 
-//TODO: make sure this is right
-We decided to use a hash table for this, as well as other data structures, due
-to the efficiency of the lookups. Also, with much of the code already provided,
-it was simple to create our own instances of the hash table, and to include a
-hash_elem in the frame struct.
-
+We decided to use hash tables for the frame and the page tables, because they have
+efficient constant lookup for kernel addresses respectively. Creating a pointer
+in the page struct to a given frame struct was not a good idea because it would
+require making the page struct larger than it needed to be (making it more likely
+that malloc could fail), also because of the relatively small number of entries in
+the frame table it was not to expensive to just iterate through the table.
 
                PAGING TO AND FROM DISK
                =======================
@@ -161,7 +167,10 @@ Pinning?
 >> into physical memory, or do you use some other design?  How do you
 >> gracefully handle attempted accesses to invalid virtual addresses?
 
-
+//TODO dont know if this is right
+If a virtual address is invalid then the page fault handler will kill
+the process if it fills any of the criteria declaring it an invalid 
+address.
 
 ---- RATIONALE ----
 
