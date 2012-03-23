@@ -30,8 +30,36 @@ Craig Ellis <ce710@doc.ic.ac.uk>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
-//TODO: structs (i'll do it all at once when everything will definitely stay
-the same - it was a faff last time)
+New structs:
+
+struct frame
+  {
+    void *addr;                 /* Kernel virtual address of the page. */
+    void *uaddr;                /* Virtual address of the page. */
+    bool write;                 /* Indicates if this frame can be written
+                                   into. */
+    struct thread *owner;       /* Owner of the frame. */
+    struct hash_elem hash_elem; /* Hash element in frame table. */
+    bool evictable;             /* Used to implement pinning. */
+  };
+
+struct page
+  {
+    uint8_t *uaddr;             /* Page address in user virtual memory. */
+    int16_t saddr;              /* Index of the swap slot. */
+    struct file *file;          /* File to lazily load the page from. */
+    int16_t file_start_pos;     /* Starting position in the file to read
+                                   the page from. */
+    uint16_t file_read_bytes;   /* How many bytes to read from the file. */
+    bool write;                 /* Indication of read/write permissions. */
+    struct hash_elem hash_elem; /* Hash elem for a supplemental page table. */
+  };
+
+
+Added to struct thread:
+
+    struct hash sup_page_table;         /* Supplemental page table. */
+    void * esp;                         /* Saved value for the stack pointer */
 
 
 ---- ALGORITHMS ----
@@ -90,8 +118,6 @@ through the table.
 >> B1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
-
-//TODO: structs
 
 
 ---- ALGORITHMS ----
@@ -203,7 +229,25 @@ chances of deadlock.
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
-//TODO: structs
+New structs:
+
+/* A file mapped to a memory location. */
+struct mapped_file
+  {
+    int mapping_id;                     /* A unique (per process)
+                                           mapping ID. */
+    struct file *file;                  /* Pointer to the file struct. */
+    void *addr;                         /* Address at which the file is
+                                           mapped. */
+    int size;                           /* Size of the file in bytes. */
+    struct list_elem elem;              /* List element. */
+  };
+
+
+Added to struct thread:
+
+    struct list mapped_files;           /* List of files mapped to memory by
+                                           this process. */
 
 
 ---- ALGORITHMS ----
