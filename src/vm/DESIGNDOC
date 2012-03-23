@@ -51,7 +51,8 @@ when these pointers in the frame and page match up.
 >> kernel and user virtual addresses that alias a single frame, or
 >> alternatively how do you avoid the issue?
 
-//TODO: the code for this?
+We avoid this issue by only accessing user memory through its user
+virtual address.
 
 
 ---- SYNCHRONIZATION ----
@@ -59,8 +60,8 @@ when these pointers in the frame and page match up.
 >> A4: When two user processes both need a new frame at the same time,
 >> how are races avoided?
 
-//TODO: the code for this?
-
+There is a lock around the frame_evict () function, this means only
+one frame can be evicted at a time.
 
 ---- RATIONALE ----
 
@@ -91,22 +92,37 @@ hash_elem in the frame struct.
 >> B2: When a frame is required but none is free, some frame must be
 >> evicted.  Describe your code for choosing a frame to evict.
 
-//TODO: a better eviction algorithm?
+We select a frame by choosing a random index in the frame table, check if it
+is evictable (not pinned), otherwise another random frame will keep being
+selected until an evictable one is found.
 
 
 >> B3: When a process P obtains a frame that was previously used by a
 >> process Q, how do you adjust the page table (and any other data
 >> structures) to reflect the frame Q no longer has?
 
-//TODO: i (craig) can probably do this, assuming the code is done. which i'm
-not sure it is.
+First of all, the user virtual address is uninstalled from the pagedir
+to indicate that Q's page is no longer in a frame.
+
+The page from Q will have been written to swap or be in the file system.
+So the information for reading that data again from a file, or from swap
+is recorded in the supplementary page table.
 
 
 >> B4: Explain your heuristic for deciding whether a page fault for an
 >> invalid virtual address should cause the stack to be extended into
 >> the page that faulted.
 
-//TODO: stack growth
+If the page fault is for an address is greater than the stack pointer, then
+this means a stack address was being accessed when the page fault occured. But
+the fault address may have been accessed before the stack pointer was updated.
+The PUSHA instuction can push 32 bytes onto the stack,so  we know that if the 
+fault address is greater than esp - 33 then the fault was on the stack.
+
+We now check if the page is in the supplementary page table, in which case it is 
+loaded. Otherwise, the stack is extended. Unless the esp - 32 value is less
+than PHYS_BASE - 8MB, this means the stack has overflowed the limit we imposed, in
+which case the process exits.
 
 
 ---- SYNCHRONIZATION ----
@@ -124,16 +140,20 @@ not sure it is.
 >> the page during the eviction process?  How do you avoid a race
 >> between P evicting Q's frame and Q faulting the page back in?
 
-//TODO: implement synchronisation
-
+There is a lock around frame_evict, which selects a frame to evict at
+random and writes its contents to swap, freeing the frame. Crucially
+the frame being evicted is removed from process Q's page directory.
+This will cause a page fault if Q tries to access any of this memory, 
+it will not be able to get access to the memory without evicting
+a page, and will not be able to do so until process P has finished
+evicting it (writing to swap) and it releases the lock.
 
 >> B7: Suppose a page fault in process P causes a page to be read from
 >> the file system or swap.  How do you ensure that a second process Q
 >> cannot interfere by e.g. attempting to evict the frame while it is
 >> still being read in?
 
-//TODO: implement synchronisation
-
+Pinning?
 
 >> B8: Explain how you handle access to paged-out pages that occur
 >> during system calls.  Do you use page faults to bring in pages (as
@@ -141,7 +161,6 @@ not sure it is.
 >> into physical memory, or do you use some other design?  How do you
 >> gracefully handle attempted accesses to invalid virtual addresses?
 
-//TODO: implement synchronisation
 
 
 ---- RATIONALE ----
@@ -153,7 +172,9 @@ not sure it is.
 >> where your design falls along this continuum and why you chose to
 >> design it this way.
 
-//TODO: implement synchronisation
+Our design falls on the minimal locking end of the continuum, we decided to
+design it this way because of its ease of readability, and to minimise the 
+chances of deadlock.
 
 
              MEMORY MAPPED FILES
