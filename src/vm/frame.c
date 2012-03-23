@@ -4,16 +4,20 @@
 #include <stdio.h>
 #include "threads/malloc.h"
 #include "threads/palloc.h"
+#include "threads/synch.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "vm/page.h"
 
 static struct hash frame_table; /* Frame table*/
 
+static struct lock eviction_lock;
+
 void
 frame_init (void)
 {
   hash_init (&frame_table, &frame_hash_func, &frame_less_func, NULL);
+  lock_init (&eviction_lock);
 }
 
 struct frame *
@@ -77,6 +81,8 @@ frame_less_func (const struct hash_elem *a, const struct hash_elem *b,
 void
 frame_evict ()
 {
+  lock_acquire (&eviction_lock);
+
   struct thread *t = thread_current ();
   struct pool *user_pool = get_user_pool ();
   struct frame *evictee;  
@@ -90,6 +96,8 @@ frame_evict ()
   } while (evictee == NULL || !evictee->evictable);
 
   page_create (evictee);
+  
+  lock_release (&eviction_lock);
 }
 
 void
