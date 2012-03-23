@@ -187,6 +187,7 @@ page_fault (struct intr_frame *f)
           page->uaddr = fault_addr;
           page->saddr = -1;
           page->write = true;
+          page->access_lock = malloc (sizeof (struct lock));
           hash_insert (&t->sup_page_table, &page->hash_elem);
 
           install_page (fault_addr_rounded_down, kernel_addr, true);

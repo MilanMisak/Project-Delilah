@@ -83,7 +83,6 @@ frame_evict ()
 {
   lock_acquire (&eviction_lock);
 
-  struct thread *t = thread_current ();
   struct pool *user_pool = get_user_pool ();
   struct frame *evictee;  
   int frame_table_size = hash_size (&frame_table);
@@ -95,9 +94,17 @@ frame_evict ()
     evictee = frame_lookup (i);
   } while (evictee == NULL || !evictee->evictable);
 
-  page_create (evictee);
-  
   lock_release (&eviction_lock);
+
+  struct page *upage = page_lookup (&evictee->owner->sup_page_table, evictee->uaddr);
+  if (upage->write)
+    upage->saddr = swap_write_page (upage);
+  
+  struct frame *removing = frame_remove (evictee->addr);
+  pagedir_clear_page (removing->owner->pagedir, removing->uaddr);
+  
+  palloc_free_page (evictee->addr);
+  free (evictee);
 }
 
 void

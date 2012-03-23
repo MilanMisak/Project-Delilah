@@ -1,5 +1,7 @@
 #include "swap.h"
 #include <bitmap.h>
+//TODO - remove stdio
+#include <stdio.h>
 #include "devices/block.h"
 #include "threads/malloc.h"
 #include "threads/vaddr.h"

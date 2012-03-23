@@ -123,15 +123,16 @@ page_write_to_mapped_file (struct file *file, void *addr, int file_size)
     }
 }
 
+//TODO - remove
 void
 page_create (struct frame *frame)
 {
   struct page *upage = page_lookup (&frame->owner->sup_page_table, frame->uaddr);
   if (upage->write)
     upage->saddr = swap_write_page (upage);
-  uninstall_page (frame->addr);
+  //uninstall_page (frame->addr);
   palloc_free_page (frame->addr);
-  free (frame);
+  //free (frame);
 }
 
 void
