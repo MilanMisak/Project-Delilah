@@ -557,6 +557,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       page->file_start_pos = ofs + total_read_bytes;
       page->file_read_bytes = page_read_bytes;
       page->write = writable;
+      page->access_lock = malloc (sizeof (struct lock));
 
       hash_insert (&thread_current ()->sup_page_table, &page->hash_elem);
 
@@ -588,6 +589,7 @@ setup_stack (void **esp)
         page->uaddr = ((uint8_t *) PHYS_BASE) - PGSIZE;
         page->saddr = -1;
         page->write = true;
+        page->access_lock = malloc (sizeof (struct lock));
         hash_insert (&thread_current ()->sup_page_table, &page->hash_elem);
         
         *esp = PHYS_BASE;

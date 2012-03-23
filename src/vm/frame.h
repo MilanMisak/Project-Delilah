@@ -2,6 +2,7 @@
 #define VM_FRAME_H
 
 #include <hash.h>
+#include "threads/synch.h"
 
 struct frame
   {
@@ -10,6 +11,7 @@ struct frame
     bool write;
     struct thread *owner;       /* Owner of the frame. */
     struct hash_elem hash_elem; /* Hash element in frame table. */
+    struct lock *lock;
   };
 
 /* Initializes the frame table. */

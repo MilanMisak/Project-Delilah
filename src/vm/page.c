@@ -61,7 +61,6 @@ page_load (struct page *upage, void *fault_addr)
             != (int) upage->file_read_bytes)
         {
           palloc_free_page (kpage);
-          printf ("file not read properly (page.c:58)\n");
           thread_exit ();
         }
       memset (kpage + upage->file_read_bytes, 0, PGSIZE - upage->file_read_bytes);
@@ -70,7 +69,6 @@ page_load (struct page *upage, void *fault_addr)
       if (!install_page (upage->uaddr, kpage, upage->write)) 
         {
           palloc_free_page (kpage);
-          printf ("page not installed properly (page.c:67)\n");
           thread_exit ();
         } 
     }
@@ -125,15 +123,16 @@ page_write_to_mapped_file (struct file *file, void *addr, int file_size)
     }
 }
 
+//TODO - remove
 void
 page_create (struct frame *frame)
 {
   struct page *upage = page_lookup (&frame->owner->sup_page_table, frame->uaddr);
-  if (upage->write)
+  if (upage->write && pagedir_is_dirty (frame->owner->pagedir, frame->uaddr))
     upage->saddr = swap_write_page (upage);
-  uninstall_page (frame->addr);
+  //uninstall_page (frame->addr);
   palloc_free_page (frame->addr);
-  free (frame);
+  //free (frame);
 }
 
 void

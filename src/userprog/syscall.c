@@ -556,6 +556,7 @@ h_mmap (struct intr_frame *f)
       page->uaddr = addr + i;
       page->saddr = -1;
       page->write = true;
+      page->access_lock = malloc (sizeof (struct lock));
 
       hash_insert (&thread_current ()->sup_page_table, &page->hash_elem);
     }
