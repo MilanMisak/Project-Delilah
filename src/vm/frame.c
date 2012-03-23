@@ -4,16 +4,20 @@
 #include <stdio.h>
 #include "threads/malloc.h"
 #include "threads/palloc.h"
+#include "threads/synch.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "vm/page.h"
 
 static struct hash frame_table; /* Frame table*/
 
+static struct lock eviction_lock;
+
 void
 frame_init (void)
 {
   hash_init (&frame_table, &frame_hash_func, &frame_less_func, NULL);
+  lock_init (&eviction_lock);
 }
 
 struct frame *
@@ -77,19 +81,30 @@ frame_less_func (const struct hash_elem *a, const struct hash_elem *b,
 void
 frame_evict ()
 {
-  struct thread *t = thread_current ();
+  lock_acquire (&eviction_lock);
+
   struct pool *user_pool = get_user_pool ();
   struct frame *evictee;  
   int frame_table_size = hash_size (&frame_table);
   int index;
-  //TODO: only evict when frame's evictable == true
+  
   do {
     index = (random_ulong () % (frame_table_size - 1)) + 1;
     void *i = user_pool->base + PGSIZE * index;
     evictee = frame_lookup (i);
-  } while (evictee == NULL);
+  } while (evictee == NULL || !evictee->evictable);
 
-  page_create (evictee);
+  lock_release (&eviction_lock);
+
+  struct page *upage = page_lookup (&evictee->owner->sup_page_table, evictee->uaddr);
+  if (upage->write)
+    upage->saddr = swap_write_page (upage);
+  
+  struct frame *removing = frame_remove (evictee->addr);
+  pagedir_clear_page (removing->owner->pagedir, removing->uaddr);
+  
+  palloc_free_page (evictee->addr);
+  free (evictee);
 }
 
 void

@@ -1,5 +1,7 @@
 #include "swap.h"
 #include <bitmap.h>
+//TODO - remove stdio
+#include <stdio.h>
 #include "devices/block.h"
 #include "threads/malloc.h"
 #include "threads/vaddr.h"
@@ -41,6 +43,7 @@ swap_write_page (struct page *page)
       block_write (swap_device, sector + i, buffer);
       buffer += BLOCK_SECTOR_SIZE;
     } 
+  
   return index;
 }
 
@@ -57,6 +60,7 @@ swap_read_page (struct page *page)
     }
   
   bitmap_flip (used_map, page->saddr);
+  page->saddr = -1;
 }
 
 void
@@ -66,4 +70,9 @@ swap_remove_page (struct page *page)
   //TODO: freeing?
 }
 
-
+void
+swap_remove (int saddr)
+{
+  if (saddr != -1)
+    bitmap_flip (used_map, saddr);
+}
