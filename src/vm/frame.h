@@ -11,8 +11,8 @@ struct frame
     bool write;                 /* Indicates if this frame can be written
                                    into. */
     struct thread *owner;       /* Owner of the frame. */
-    struct hash_elem hash_elem; /* Hash element in frame table. */
     bool evictable;             /* Used to implement pinning. */
+    struct hash_elem hash_elem; /* Hash element in frame table. */
   };
 
 /* Initializes the frame table. */
