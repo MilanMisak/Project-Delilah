@@ -139,7 +139,13 @@ in which case the process exits.
 >> textbook for an explanation of the necessary conditions for
 >> deadlock.)
 
-//TODO: implement synchronisation
+Our synchronisation design is based around locking the frame_evict
+function, in conjunction with a few other minor details. Essentially
+only one frame may be evicted at any one time. 
+
+The benefit of this is that there can be no circular wait with only 
+one main lock, the process holding it cannot be made to wait for
+another process currently waiting on it.
 
 
 >> B6: A page fault in process P can cause another process Q's frame
