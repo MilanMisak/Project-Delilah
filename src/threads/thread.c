@@ -478,6 +478,7 @@ thread_exit (void)
     {
       struct page *p = hash_entry (hash_cur (&i), struct page, hash_elem);
       frame_remove_by_upage (p->uaddr);
+      swap_remove (p->saddr);
     }
 
   /* Close all open files. */

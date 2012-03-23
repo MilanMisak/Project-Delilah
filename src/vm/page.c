@@ -61,7 +61,6 @@ page_load (struct page *upage, void *fault_addr)
             != (int) upage->file_read_bytes)
         {
           palloc_free_page (kpage);
-          printf ("file not read properly (page.c:58)\n");
           thread_exit ();
         }
       memset (kpage + upage->file_read_bytes, 0, PGSIZE - upage->file_read_bytes);
@@ -70,7 +69,6 @@ page_load (struct page *upage, void *fault_addr)
       if (!install_page (upage->uaddr, kpage, upage->write)) 
         {
           palloc_free_page (kpage);
-          printf ("page not installed properly (page.c:67)\n");
           thread_exit ();
         } 
     }
