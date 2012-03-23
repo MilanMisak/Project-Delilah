@@ -159,7 +159,7 @@ evicting it (writing to swap) and it releases the lock.
 >> cannot interfere by e.g. attempting to evict the frame while it is
 >> still being read in?
 
-Pinning?
+//TODO Pinning?
 
 >> B8: Explain how you handle access to paged-out pages that occur
 >> during system calls.  Do you use page faults to bring in pages (as
