@@ -12,7 +12,6 @@ struct frame
     struct thread *owner;       /* Owner of the frame. */
     struct hash_elem hash_elem; /* Hash element in frame table. */
     bool evictable;             /* Used to implement pinning. */
-    struct lock *lock;
   };
 
 /* Initializes the frame table. */

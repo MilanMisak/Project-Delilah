@@ -303,9 +303,7 @@ h_read (struct intr_frame *f)
     {
       int i;
       for (i = 0; i < size; i++)
-        {
-          *(buffer + i) = input_getc ();
-        }
+        *(buffer + i) = input_getc ();
 
       f->eax = size;
     }

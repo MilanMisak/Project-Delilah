@@ -14,7 +14,6 @@
 #include "vm/frame.h"
 #include "vm/swap.h"
 
-
 /* Loads a page from the file system into memory */
 void page_filesys_load (struct page *upage, void *kpage);
 
@@ -35,6 +34,7 @@ page_load (struct page *upage, void *fault_addr)
           frame_evict ();
           kpage = palloc_get_page (PAL_USER);
         }
+
       install_page (upage->uaddr, kpage, upage->write);
       swap_read_page (upage);
     }
