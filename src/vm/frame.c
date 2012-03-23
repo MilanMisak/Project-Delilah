@@ -95,8 +95,6 @@ frame_evict ()
     evictee = frame_lookup (i);
   } while (evictee == NULL || !evictee->evictable);
 
-  lock_release (&eviction_lock);
-
   struct page *upage = page_lookup (&evictee->owner->sup_page_table, evictee->uaddr);
   //TODO - remove this shit
   //lock_acquire (upage->access_lock);
@@ -109,6 +107,8 @@ frame_evict ()
   
   palloc_free_page (evictee->addr);
   free (evictee);
+
+  lock_release (&eviction_lock);
 }
 
 void
