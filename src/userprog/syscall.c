@@ -8,11 +8,11 @@
 #include "lib/kernel/console.h"
 #include "threads/interrupt.h"
 #include "threads/malloc.h"
+#include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "userprog/process.h"
 #include "vm/page.h"
-#include "threads/palloc.h"
 
 static void syscall_handler (struct intr_frame *);
 

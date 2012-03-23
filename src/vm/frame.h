@@ -26,6 +26,9 @@ void frame_insert (void *faddr, void *uaddr, bool write);
 /* Removes and returns a frame from the frame table. */
 struct frame* frame_remove (void *);
 
+//TODO - comment
+void frame_remove_by_upage (void *upage);
+
 /* Hash function for frames. */
 unsigned frame_hash_func (const struct hash_elem *e, void *aux);
 
