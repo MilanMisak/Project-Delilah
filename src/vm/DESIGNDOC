@@ -74,12 +74,13 @@ means only one frame can be evicted at a time.
 >> A5: Why did you choose the data structure(s) that you did for
 >> representing virtual-to-physical mappings?
 
-We decided to use hash tables for the frame and the page tables, because they have
-efficient constant lookup for kernel addresses respectively. Creating a pointer
-in the page struct to a given frame struct was not a good idea because it would
-require making the page struct larger than it needed to be (making it more likely
-that malloc could fail), also because of the relatively small number of entries in
-the frame table it was not to expensive to just iterate through the table.
+We decided to use hash tables for the frame and the page tables, because they
+have efficient constant lookup for kernel addresses respectively. Creating a
+pointer in the page struct to a given frame struct was not a good idea because
+it would require making the page struct larger than it needed to be (making it
+more likely that malloc could fail), also because of the relatively small
+number of entries in the frame table it was not to expensive to just iterate
+through the table.
 
                PAGING TO AND FROM DISK
                =======================
@@ -125,10 +126,10 @@ the fault address may have been accessed before the stack pointer was updated.
 The PUSHA instuction can push 32 bytes onto the stack,so  we know that if the 
 fault address is greater than esp - 33 then the fault was on the stack.
 
-We now check if the page is in the supplementary page table, in which case it is 
-loaded. Otherwise, the stack is extended. Unless the esp - 32 value is less
-than PHYS_BASE - 8MB, this means the stack has overflowed the limit we imposed, in
-which case the process exits.
+We now check if the page is in the supplementary page table, in which case it
+is loaded. Otherwise, the stack is extended. Unless the esp - 32 value is less
+than PHYS_BASE - 8MB, this means the stack has overflowed the limit we imposed,
+in which case the process exits.
 
 
 ---- SYNCHRONIZATION ----
@@ -159,12 +160,11 @@ evicting it (writing to swap) and it releases the lock.
 >> cannot interfere by e.g. attempting to evict the frame while it is
 >> still being read in?
 
-We attempted to solve this problem using pinning. A boolean in the
-frame struct indicates whether or not it can be evicted when freeing
-memory in the frame table. This would be set in h_read and h_write,
-when the buffer in user memory is accessed.
-However, the nature of our memory handling causes this to fail with
-many of the tests, and in the end we were forced to discard it.
+We attempted to solve this problem using pinning. A boolean in the frame struct
+indicates whether or not it can be evicted when freeing memory in the frame
+table. This would be set in h_read and h_write, when the buffer in user memory
+is accessed. However, the nature of our memory handling causes this to fail
+with many of the tests, and in the end we were forced to discard it.
 
 >> B8: Explain how you handle access to paged-out pages that occur
 >> during system calls.  Do you use page faults to bring in pages (as
@@ -173,12 +173,12 @@ many of the tests, and in the end we were forced to discard it.
 >> gracefully handle attempted accesses to invalid virtual addresses?
 
 //TODO dont know if this is right
-Our pinning implementation would have meant that pages already in use
-by system calls are not paged out.
-However, it will currently page fault to load the appropriate memory,
-as user programs do. If a virtual address is invalid then the page
-fault handler will kill the process if it fills any of the criteria
-declaring it an invalid address.
+Our pinning implementation would have meant that pages already in use by system
+calls are not paged out.
+However, it will currently page fault to load the appropriate memory, as user
+programs do. If a virtual address is invalid then the page fault handler will
+kill the process if it fills any of the criteria declaring it an invalid
+address.
 
 ---- RATIONALE ----
 

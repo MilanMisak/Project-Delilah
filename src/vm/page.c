@@ -1,8 +1,6 @@
 #include "vm/page.h"
 #include <debug.h>
 #include <stddef.h>
-//TODO - remove stdio
-#include <stdio.h>
 #include <string.h>
 #include "devices/block.h"
 #include "filesys/file.h"

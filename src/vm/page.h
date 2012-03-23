@@ -19,7 +19,6 @@ struct page
                                    the page from. */
     uint16_t file_read_bytes;   /* How many bytes to read from the file. */
     bool write;                 /* Indication of read/write permissions. */
-    struct lock *access_lock; //TODO - comment
     struct hash_elem hash_elem; /* Hash elem for a supplemental page table. */
   };
 

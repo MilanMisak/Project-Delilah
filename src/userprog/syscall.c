@@ -540,15 +540,14 @@ h_mmap (struct intr_frame *f)
     {
       struct page *page = malloc (sizeof (struct page));
       if (page == NULL)
-      {
-        //TODO - do something here?
-        printf ("baaad\n");
-      }
+        {
+          f->eax = -1;
+          return;
+        }
 
       page->uaddr = addr + i;
       page->saddr = -1;
       page->write = true;
-      page->access_lock = malloc (sizeof (struct lock));
 
       hash_insert (&thread_current ()->sup_page_table, &page->hash_elem);
     }
