@@ -540,10 +540,10 @@ h_mmap (struct intr_frame *f)
     {
       struct page *page = malloc (sizeof (struct page));
       if (page == NULL)
-      {
-        //TODO - do something here?
-        printf ("baaad\n");
-      }
+        {
+          f->eax = -1;
+          return;
+        }
 
       page->uaddr = addr + i;
       page->saddr = -1;

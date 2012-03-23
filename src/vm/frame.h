@@ -8,7 +8,8 @@ struct frame
   {
     void *addr;                 /* Kernel virtual address of the page. */
     void *uaddr;                /* Virtual address of the page. */
-    bool write;//TODO - comment
+    bool write;                 /* Indicates if this frame can be written
+                                   into. */
     struct thread *owner;       /* Owner of the frame. */
     struct hash_elem hash_elem; /* Hash element in frame table. */
     bool evictable;             /* Used to implement pinning. */
