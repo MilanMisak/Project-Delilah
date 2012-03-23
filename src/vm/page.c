@@ -38,6 +38,7 @@ page_load (struct page *upage, void *fault_addr)
   else
     {
       /* Load from a file. */
+      
       if (upage->file == NULL)
         {
           /* Memory-mapped file. */
@@ -54,7 +55,7 @@ page_load (struct page *upage, void *fault_addr)
 
       /* Load this page. */
       if (file_read_at (upage->file, kpage, upage->file_read_bytes,
-              upage->file_start_pos)
+                        upage->file_start_pos)
             != (int) upage->file_read_bytes)
         {
           palloc_free_page (kpage);
@@ -89,11 +90,11 @@ page_load_from_mapped_file (struct page *upage, void *fault_addr)
 
   void *in_file_addr = (void *) (orig_fault_addr - mapped_file->addr);
   uint8_t *buffer = palloc_get_page (PAL_USER);
-  if (buffer == NULL)
-    {
-      printf ("palloc didn't palloc (page.c:92)\n");
-      return false;
-    }
+  while (buffer == NULL)
+  {
+    frame_evict ();
+    buffer = palloc_get_page (PAL_USER);
+  }
   int bytes_read = file_read_at (mapped_file->file, buffer, PGSIZE,
                                  (int) pg_round_down (in_file_addr));
 
