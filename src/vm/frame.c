@@ -7,6 +7,7 @@
 #include "threads/synch.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "userprog/pagedir.h"
 #include "vm/page.h"
 
 static struct hash frame_table; /* Frame table*/
@@ -97,11 +98,14 @@ frame_evict ()
   lock_release (&eviction_lock);
 
   struct page *upage = page_lookup (&evictee->owner->sup_page_table, evictee->uaddr);
+  //TODO - remove this shit
+  //lock_acquire (upage->access_lock);
+  //lock_release (upage->access_lock);
+  pagedir_clear_page (evictee->owner->pagedir, evictee->uaddr);
+  
   if (upage->write)
     upage->saddr = swap_write_page (upage);
-  
-  struct frame *removing = frame_remove (evictee->addr);
-  pagedir_clear_page (removing->owner->pagedir, removing->uaddr);
+  frame_remove (evictee->addr);
   
   palloc_free_page (evictee->addr);
   free (evictee);

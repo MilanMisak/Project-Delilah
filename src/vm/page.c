@@ -30,7 +30,7 @@ page_load (struct page *upage, void *fault_addr)
     {
       /* Load from swap. */
       void *kpage = palloc_get_page (PAL_USER);
-      if (kpage == NULL)
+      while (kpage == NULL)
         {
           frame_evict ();
           kpage = palloc_get_page (PAL_USER);

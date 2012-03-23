@@ -36,7 +36,9 @@ swap_write_page (struct page *page)
     }
 
   block_sector_t sector = index * SECTORS_PER_PAGE;
-  void *buffer = page->uaddr;
+  struct frame *frame = frame_find_upage (page->uaddr);
+
+  void *buffer = frame->addr;
   unsigned int i;
   for (i = 0; i < SECTORS_PER_PAGE; i++) 
     {
