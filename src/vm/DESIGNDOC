@@ -164,7 +164,7 @@ We attempted to solve this problem using pinning. A boolean in the frame struct
 indicates whether or not it can be evicted when freeing memory in the frame
 table. This would be set in h_read and h_write, when the buffer in user memory
 is accessed. However, the nature of our memory handling causes this to fail
-with many of the tests, and in the end we were forced to discard it.
+with some of the tests, and in the end we were forced to discard it.
 
 >> B8: Explain how you handle access to paged-out pages that occur
 >> during system calls.  Do you use page faults to bring in pages (as
