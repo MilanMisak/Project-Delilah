@@ -111,19 +111,6 @@ frame_evict ()
   lock_release (&eviction_lock);
 }
 
-void
-frame_destroy (struct hash_elem *e, void *aux UNUSED)
-{
-  struct frame *f = hash_entry (e, struct frame, hash_elem);
-  free (f);
-}
-
-void
-frame_table_destroy ()
-{
-  hash_destroy (&frame_table, &frame_destroy);
-}
-
 struct frame *
 frame_find_upage (uint8_t *uaddr)
 {
