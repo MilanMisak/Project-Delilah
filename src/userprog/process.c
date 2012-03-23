@@ -545,11 +545,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
       struct page *page = malloc (sizeof (struct page));
       if (page == NULL)
-        {
-          //TODO - do something here?
-          printf ("baaad");
-          return false;
-        }
+        return false;
 
       page->uaddr = upage;
       page->saddr = -1;
