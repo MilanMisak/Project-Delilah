@@ -1,8 +1,8 @@
-            +--------------------------+
-            |          OS 211          |
-            |  TASK 3: VIRTUAL MEMORY  |
-            |      DESIGN DOCUMENT     |
-            +--------------------------+
++--------------------------+
+|          OS 211          |
+|  TASK 3: VIRTUAL MEMORY  |
+|      DESIGN DOCUMENT     |
++--------------------------+
 
 ---- GROUP ----
 
@@ -21,8 +21,8 @@ Craig Ellis <ce710@doc.ic.ac.uk>
 >> preparing your submission, other than the Pintos documentation, course
 >> text, lecture notes, and course staff.
 
-            PAGE TABLE MANAGEMENT
-            =====================
+PAGE TABLE MANAGEMENT
+=====================
 
 ---- DATA STRUCTURES ----
 
@@ -30,8 +30,36 @@ Craig Ellis <ce710@doc.ic.ac.uk>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
-//TODO: structs (i'll do it all at once when everything will definitely stay
-the same - it was a faff last time)
+New structs:
+
+struct frame
+  {
+    void *addr;                 /* Kernel virtual address of the page. */
+    void *uaddr;                /* Virtual address of the page. */
+    bool write;                 /* Indicates if this frame can be written
+                                   into. */
+    struct thread *owner;       /* Owner of the frame. */
+    struct hash_elem hash_elem; /* Hash element in frame table. */
+    bool evictable;             /* Used to implement pinning. */
+  };
+
+struct page
+  {
+    uint8_t *uaddr;             /* Page address in user virtual memory. */
+    int16_t saddr;              /* Index of the swap slot. */
+    struct file *file;          /* File to lazily load the page from. */
+    int16_t file_start_pos;     /* Starting position in the file to read
+                                   the page from. */
+    uint16_t file_read_bytes;   /* How many bytes to read from the file. */
+    bool write;                 /* Indication of read/write permissions. */
+    struct hash_elem hash_elem; /* Hash elem for a supplemental page table. */
+  };
+
+
+Added to struct thread:
+
+  struct hash sup_page_table;         /* Supplemental page table. */
+  void * esp;                         /* Saved value for the stack pointer */
 
 
 ---- ALGORITHMS ----
@@ -39,8 +67,8 @@ the same - it was a faff last time)
 >> A2: In a few paragraphs, describe your code for locating the frame,
 >> if any, that contains the data of a given page.
 
-We have a a hash table for each function called a sup_page_table (
-supplementary page table), consisting of page structs, this contains a user
+We have a a hash table for each function called a sup_page_table
+(supplementary page table), consisting of page structs, this contains a user
 virtual address field.
 
 We also have a static frame table which is also a hash table containing
@@ -57,8 +85,8 @@ page struct.
 >> alternatively how do you avoid the issue?
 
 We avoid this issue by only accessing user memory through its user
-virtual address. Except when writing to swap (The kernel virtual address is not
-written to, so the dirty bit will not be changed).
+virtual address. Except when writing to swap (The kernel virtual address is
+not written to, so the dirty bit will not be changed).
 
 
 ---- SYNCHRONIZATION ----
@@ -82,8 +110,8 @@ more likely that malloc could fail), also because of the relatively small
 number of entries in the frame table it was not to expensive to just iterate
 through the table.
 
-               PAGING TO AND FROM DISK
-               =======================
+PAGING TO AND FROM DISK
+=======================
 
 ---- DATA STRUCTURES ----
 
@@ -91,13 +119,11 @@ through the table.
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
-//TODO: structs
-
 
 ---- ALGORITHMS ----
 
 >> B2: When a frame is required but none is free, some frame must be
->> evicted.  Describe your code for choosing a frame to evict.
+>> evicted. Describe your code for choosing a frame to evict.
 
 We select a frame by choosing a random index in the frame table, check if it
 is evictable (not pinned), otherwise another random frame will keep being
@@ -148,7 +174,7 @@ one main lock, the process holding it cannot be made to wait for
 another process currently waiting on it.
 
 >> B6: A page fault in process P can cause another process Q's frame
->> to be evicted.  How do you ensure that Q cannot access or modify
+>> to be evicted. How do you ensure that Q cannot access or modify
 >> the page during the eviction process?  How do you avoid a race
 >> between P evicting Q's frame and Q faulting the page back in?
 
@@ -198,22 +224,40 @@ design it this way because of its ease of readability, and to minimise the
 chances of deadlock.
 
 
-             MEMORY MAPPED FILES
-             ===================
+MEMORY MAPPED FILES
+===================
 
 ---- DATA STRUCTURES ----
 
 >> C1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
->> enumeration.  Identify the purpose of each in 25 words or less.
+>> enumeration. Identify the purpose of each in 25 words or less.
 
-//TODO: structs
+New structs:
+
+/* A file mapped to a memory location. */
+struct mapped_file
+  {
+    int mapping_id;                     /* A unique (per process)
+                                           mapping ID. */
+    struct file *file;                  /* Pointer to the file struct. */
+    void *addr;                         /* Address at which the file is
+                                           mapped. */
+    int size;                           /* Size of the file in bytes. */
+    struct list_elem elem;              /* List element. */
+  };
+
+
+Added to struct thread:
+
+  struct list mapped_files;           /* List of files mapped to memory by
+                                         this process. */
 
 
 ---- ALGORITHMS ----
 
 >> C2: Describe how memory mapped files integrate into your virtual
->> memory subsystem.  Explain how the page fault and eviction
+>> memory subsystem. Explain how the page fault and eviction
 >> processes differ between swap pages and other pages.
 
 When a memory-mapped file is in the process of being mapped to a specific
@@ -258,8 +302,8 @@ to keep two separate implementations than trying to merge them together and
 clutter the result with many if statements and control flow code.
 
 
-               SURVEY QUESTIONS
-               ================
+SURVEY QUESTIONS
+================
 
 Answering these questions is optional, but it will help us improve the
 course in future quarters.  Feel free to tell us anything you
