@@ -458,20 +458,6 @@ thread_exit (void)
   filesys_lock_release ();
 
   /* Remove and free all pages used by the thread. */
-  /*struct hash_iterator i;
-  hash_first (&i, &thread_current ()->sup_page_table);
-  while (hash_next (&i))
-    {
-      struct page *p = hash_entry (hash_cur (&i), struct page, hash_elem);
-
-      if (p->saddr != -1 )
-        //swap_remove_page (p);
-        //TODO: write contents back to memory if they've been changed?
-
-      free (p);
-    }*/
-
-  /* Remove and free all pages used by the thread. */
   struct hash_iterator i;
   hash_first (&i, &thread_current ()->sup_page_table);
   while (hash_next (&i))
