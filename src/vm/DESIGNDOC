@@ -218,7 +218,11 @@ is written to swap.
 >> C3: Explain how you determine whether a new file mapping overlaps
 >> any existing segment.
 
-
+We first check the list of all mappings for the current thread to see if
+there is an overlap between address space regions. If there is none we then
+check current thread's supplemental page table to see if there is a collision
+between the required address space and any existing data or code at all the
+affected page-aligned address locations.
 
 ---- RATIONALE ----
 
@@ -229,7 +233,17 @@ is written to swap.
 >> implementation either does or does not share much of the code for
 >> the two situations.
 
-//TODO: Milan?
+The eviction code is shared, ie. not divided for different cases. Eviction
+code is relatively straightforward and it does not matter too much where
+the affected page comes from. We only need to check if it needs to be swapped.
+
+Code for loading a page from an executable and a memory mapped file is fairly
+similar. However, we chose to differ the implementation for each one of these
+two cases. The overall structure of these cases is almost the same but
+arguments passed to other methods in the implementation are completely
+different and calculated in distinct ways. We feel that it is more readable
+to keep two separate implementations than trying to merge them together and
+clutter the result with many if statements and control flow code.
 
 
                SURVEY QUESTIONS

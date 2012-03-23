@@ -77,24 +77,17 @@ page_load (struct page *upage, void *fault_addr)
 static bool
 page_load_from_mapped_file (struct page *upage, void *fault_addr)
 {
-  //TODO - renaming things
-  void *orig_fault_addr = fault_addr;
-  //printf ("MF: %p\n", fault_addr);
-
-  struct mapped_file *mapped_file = thread_get_mapped_file (orig_fault_addr);
+  struct mapped_file *mapped_file = thread_get_mapped_file (fault_addr);
   if (mapped_file == NULL)
-  {
-    printf ("no mapped file from %p (page.c:84)\n", orig_fault_addr);
     return false;
-  }
 
-  void *in_file_addr = (void *) (orig_fault_addr - mapped_file->addr);
+  void *in_file_addr = (void *) (fault_addr - mapped_file->addr);
   uint8_t *buffer = palloc_get_page (PAL_USER);
   while (buffer == NULL)
-  {
-    frame_evict ();
-    buffer = palloc_get_page (PAL_USER);
-  }
+    {
+      frame_evict ();
+      buffer = palloc_get_page (PAL_USER);
+    }
   int bytes_read = file_read_at (mapped_file->file, buffer, PGSIZE,
                                  (int) pg_round_down (in_file_addr));
 
@@ -104,8 +97,7 @@ page_load_from_mapped_file (struct page *upage, void *fault_addr)
   if (!install_page (upage->uaddr, buffer, upage->write)) 
     {
       palloc_free_page (buffer);
-      printf ("page not installed correctly (page.c:104)\n");
-      return false;
+      thread_exit ();
     }
 
   return true;

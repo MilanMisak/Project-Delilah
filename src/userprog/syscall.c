@@ -508,7 +508,7 @@ h_mmap (struct intr_frame *f)
       return;
     }
 
-  //TODO - check if this works
+  /* Check to see if there is a collision in the supplemental page table. */
   struct hash sup_page_table = thread_current ()->sup_page_table; 
   int i;
   bool collision = false;
