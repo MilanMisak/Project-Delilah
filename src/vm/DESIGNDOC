@@ -159,7 +159,12 @@ evicting it (writing to swap) and it releases the lock.
 >> cannot interfere by e.g. attempting to evict the frame while it is
 >> still being read in?
 
-//TODO Pinning?
+We attempted to solve this problem using pinning. A boolean in the
+frame struct indicates whether or not it can be evicted when freeing
+memory in the frame table. This would be set in h_read and h_write,
+when the buffer in user memory is accessed.
+However, the nature of our memory handling causes this to fail with
+many of the tests, and in the end we were forced to discard it.
 
 >> B8: Explain how you handle access to paged-out pages that occur
 >> during system calls.  Do you use page faults to bring in pages (as
@@ -168,9 +173,12 @@ evicting it (writing to swap) and it releases the lock.
 >> gracefully handle attempted accesses to invalid virtual addresses?
 
 //TODO dont know if this is right
-If a virtual address is invalid then the page fault handler will kill
-the process if it fills any of the criteria declaring it an invalid 
-address.
+Our pinning implementation would have meant that pages already in use
+by system calls are not paged out.
+However, it will currently page fault to load the appropriate memory,
+as user programs do. If a virtual address is invalid then the page
+fault handler will kill the process if it fills any of the criteria
+declaring it an invalid address.
 
 ---- RATIONALE ----
 
