@@ -82,12 +82,12 @@ frame_evict ()
   struct frame *evictee;  
   int frame_table_size = hash_size (&frame_table);
   int index;
-  //TODO: only evict when frame's evictable == true
+  
   do {
     index = (random_ulong () % (frame_table_size - 1)) + 1;
     void *i = user_pool->base + PGSIZE * index;
     evictee = frame_lookup (i);
-  } while (evictee == NULL);
+  } while (evictee == NULL || !is_evictable(evictee));
 
   page_create (evictee);
 }
@@ -117,5 +117,12 @@ frame_find_upage (uint8_t *uaddr)
         return f;
     }
   return NULL;
+}
+
+bool
+is_evictable (struct frame *f)
+{
+  struct page *p = (struct page *)pagedir_get_page(thread_current ()->pagedir, f->uaddr);
+  return p->evictable;
 }
 

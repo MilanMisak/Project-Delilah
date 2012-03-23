@@ -21,6 +21,7 @@ struct page
     int file_read_bytes;        /* How many bytes to read from the file. */
     bool write;                 /* Indication of read/write permissions. */
     struct hash_elem hash_elem; /* Hash elem. for a supplemental page table. */
+    bool evictable;             /* Used to implement pinning. */
   };
 
 /* Called when there is a page fault to load the relevant page back into

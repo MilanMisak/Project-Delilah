@@ -8,6 +8,7 @@
 #include "lib/kernel/console.h"
 #include "threads/interrupt.h"
 #include "threads/malloc.h"
+#include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "userprog/process.h"
@@ -38,10 +39,7 @@ static void h_close    (struct intr_frame *f);
 static void h_mmap     (struct intr_frame *f);
 static void h_munmap   (struct intr_frame *f);
 
-void page_set_evictable (void *, bool);
-bool page_get_evictable (void *);
-void page_set_evictable_no_error (void *, bool);
-bool page_get_evictable_no_error (void *);
+bool page_set_evictable (void *, bool);
 
 /* System call handlers array. */
 typedef void (*handler) (struct intr_frame *f);
@@ -302,10 +300,12 @@ h_read (struct intr_frame *f)
   if (fd == STDIN_FILENO)
     {
       int i;
+      bool old_evictable = page_set_evictable (buffer, true);
       for (i = 0; i < size; i++)
         {
           *(buffer + i) = input_getc ();
         }
+      page_set_evictable (buffer, old_evictable);
 
       f->eax = size;
     }
@@ -325,9 +325,11 @@ h_read (struct intr_frame *f)
         }
 
       /* Try to read SIZE bytes from FILE to BUFFER. */
+      bool old_evictable = page_set_evictable (buffer, true);
       filesys_lock_acquire ();
       int bytes_read = file_read (file, buffer, size);
       filesys_lock_release ();
+      page_set_evictable (buffer, old_evictable);
 
       /* Return how many bytes were actually read. */
       f->eax = bytes_read;
@@ -356,6 +358,7 @@ h_write (struct intr_frame *f)
     }
   else if (fd == STDOUT_FILENO)
     {
+      bool old_evictable = page_set_evictable (buffer, true);
       int buffer_max_length = 256;
 
       if (size <= buffer_max_length)
@@ -376,6 +379,7 @@ h_write (struct intr_frame *f)
           putbuf (buffer + bytes_written, size);
           f->eax = bytes_written;
         }
+      page_set_evictable (buffer, old_evictable);
     }
   else
     {
@@ -388,9 +392,11 @@ h_write (struct intr_frame *f)
         }
 
       /* Try to write SIZE bytes from BUFFER to FILE. */
+      bool old_evictable = page_set_evictable (buffer, true);
       filesys_lock_acquire ();  
       int bytes_written = file_write (file, buffer, size);
       filesys_lock_release ();  
+      page_set_evictable (buffer, old_evictable);
 
       /* Return how many bytes were actually written. */
       f->eax = bytes_written;
@@ -571,38 +577,17 @@ h_munmap (struct intr_frame *f)
   thread_remove_mapped_file (mapping);
 }
 
-/* Sets the frame which contains uaddr to be unevictable. */
-void
+/* Sets the frame which contains uaddr to be unevictable, and returns its old
+   value for 'evictable'. */
+bool
 page_set_evictable (void *uaddr, bool new_evictable)
 {
   void *page_start = pg_round_down (uaddr);
-  struct frame *f = frame_find_upage (page_start);
-  if (f != NULL)
-    f->evictable = new_evictable;
-  else
-    {
-      /* Invalid address: kill the thread. */
-      /* (would otherwise have happened in page_fault). */
-      printf ("%s: exit(%d)\n", thread_current ()->name, -1);
-      thread_exit ();
-    }
-}
+  if (!is_user_vaddr(page_start)) return false;
 
-/* Returns the boolean 'evictable' from the frame which contains uaddr. */
-bool
-page_get_evictable (void *uaddr)
-{
-  void *page_start = pg_round_down (uaddr);
-  struct frame *f = frame_find_upage (page_start);
-  if (f != NULL)
-    return f->evictable;
-  else
-    {
-      /* Invalid address: kill the thread. */
-      /* (would otherwise have happened in page_fault). */
-      printf ("%s: exit(%d)\n", thread_current ()->name, -1);
-      thread_exit ();
-      return false;
-    }
+  struct page *page = page_lookup (&thread_current ()->sup_page_table, page_start);
+  bool old_evictable = page->evictable;
+  page->evictable = new_evictable;
+  return old_evictable;
 }
 

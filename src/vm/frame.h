@@ -10,7 +10,6 @@ struct frame
     bool write;
     struct thread *owner;       /* Owner of the frame. */
     struct hash_elem hash_elem; /* Hash element in frame table. */
-    bool evictable;             /* Used to implement pinning. */
   };
 
 /* Initializes the frame table. */
@@ -48,5 +47,8 @@ void frame_table_destroy (void);
 
 /* Finds a frame, given a user virtual address */
 struct frame *frame_find_upage (uint8_t *);
+
+//TODO: comment
+bool is_evictable (struct frame *);
 
 #endif
