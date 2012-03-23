@@ -128,7 +128,7 @@ void
 page_create (struct frame *frame)
 {
   struct page *upage = page_lookup (&frame->owner->sup_page_table, frame->uaddr);
-  if (upage->write)
+  if (upage->write && pagedir_is_dirty (frame->owner->pagedir, frame->uaddr))
     upage->saddr = swap_write_page (upage);
   //uninstall_page (frame->addr);
   palloc_free_page (frame->addr);
