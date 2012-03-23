@@ -204,13 +204,20 @@ chances of deadlock.
 >> memory subsystem.  Explain how the page fault and eviction
 >> processes differ between swap pages and other pages.
 
-//TODO: Finish these functions?
+When a memory-mapped file is in the process of being mapped to a specific
+memory location we find out what its size is. Then we can use this knowledge
+for inserting sufficient number of entries into the supplemental page table.
 
+Our page fault handling code has three different cases for loading data from
+either swap or a memory-mapped file or lazily from a program executable file.
+
+While evicting a page we check if the page is writable and has been changed
+(by checking the dirty bit). If both of these conditions are true the page
+is written to swap.
 
 >> C3: Explain how you determine whether a new file mapping overlaps
 >> any existing segment.
 
-//TODO: What is this question?
 
 
 ---- RATIONALE ----
