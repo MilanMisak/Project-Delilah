@@ -11,8 +11,8 @@ struct frame
     bool write;                 /* Indicates if this frame can be written
                                    into. */
     struct thread *owner;       /* Owner of the frame. */
-    struct hash_elem hash_elem; /* Hash element in frame table. */
     bool evictable;             /* Used to implement pinning. */
+    struct hash_elem hash_elem; /* Hash element in frame table. */
   };
 
 /* Initializes the frame table. */
@@ -31,17 +31,17 @@ struct frame* frame_remove (void *);
 /* Removes a frame associated with the given user virtual address. */
 void frame_remove_by_upage (void *upage);
 
+/* Evicts a frame randomly, creates a page and sends it to swap */
+void frame_evict (void);
+
+/* Finds a frame, given a user virtual address */
+struct frame *frame_find_upage (uint8_t *);
+
 /* Hash function for frames. */
 unsigned frame_hash_func (const struct hash_elem *e, void *aux);
 
 /* Function for ordering frames. */
 bool frame_less_func (const struct hash_elem *a, const struct hash_elem *b,
                       void *aux);
-
-/* Evicts a frame randomly, creates a page and sends it to swap */
-void frame_evict (void);
-
-/* Finds a frame, given a user virtual address */
-struct frame *frame_find_upage (uint8_t *);
 
 #endif

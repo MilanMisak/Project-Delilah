@@ -11,7 +11,7 @@
 #include "vm/page.h"
 #include "vm/swap.h"
 
-static struct hash frame_table; /* Frame table*/
+static struct hash frame_table;
 
 static struct lock eviction_lock;
 
@@ -64,22 +64,6 @@ frame_remove_by_upage (void *upage)
     }
 }
 
-unsigned
-frame_hash_func (const struct hash_elem *e, void *aux UNUSED) 
-{
-  const struct frame *f = hash_entry (e, struct frame, hash_elem);
-  return hash_bytes (&f->addr, sizeof &f->addr);
-}
-
-bool
-frame_less_func (const struct hash_elem *a, const struct hash_elem *b,
-                 void *aux UNUSED)
-{
-  const struct frame *fa = hash_entry (a, struct frame, hash_elem);
-  const struct frame *fb = hash_entry (b, struct frame, hash_elem);
-  return fa->addr < fb->addr;
-}
-
 void
 frame_evict ()
 {
@@ -123,5 +107,21 @@ frame_find_upage (uint8_t *uaddr)
         return f;
     }
   return NULL;
+}
+
+unsigned
+frame_hash_func (const struct hash_elem *e, void *aux UNUSED) 
+{
+  const struct frame *f = hash_entry (e, struct frame, hash_elem);
+  return hash_bytes (&f->addr, sizeof &f->addr);
+}
+
+bool
+frame_less_func (const struct hash_elem *a, const struct hash_elem *b,
+                 void *aux UNUSED)
+{
+  const struct frame *fa = hash_entry (a, struct frame, hash_elem);
+  const struct frame *fb = hash_entry (b, struct frame, hash_elem);
+  return fa->addr < fb->addr;
 }
 

@@ -1,7 +1,5 @@
 #include "swap.h"
 #include <bitmap.h>
-//TODO - remove stdio
-#include <stdio.h>
 #include "devices/block.h"
 #include "threads/malloc.h"
 #include "threads/vaddr.h"
@@ -26,14 +24,13 @@ swap_init (void)
   swap_device = block_get_role (BLOCK_SWAP);
 }
 
+/* Writes a page to swap and returns its index in swap. */
 size_t
 swap_write_page (struct page *page)
 {
   size_t index = bitmap_scan_and_flip (used_map, 0, 1, false);
   if (index == BITMAP_ERROR)
-    {
-      PANIC("swap partition is full");
-    }
+    PANIC("swap partition is full");
 
   block_sector_t sector = index * SECTORS_PER_PAGE;
   struct frame *frame = frame_find_upage (page->uaddr);
@@ -49,6 +46,7 @@ swap_write_page (struct page *page)
   return index;
 }
 
+/* Reads a page from swap. */
 void
 swap_read_page (struct page *page)
 { 
@@ -65,7 +63,7 @@ swap_read_page (struct page *page)
   page->saddr = -1;
 }
 
-
+/* Removes swap location given by the index SADDR. */
 void
 swap_remove (int saddr)
 {

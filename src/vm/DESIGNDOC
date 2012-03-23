@@ -165,8 +165,13 @@ in which case the process exits.
 >> textbook for an explanation of the necessary conditions for
 >> deadlock.)
 
-//TODO: implement synchronisation
+Our synchronisation design is based around locking the frame_evict
+function, in conjunction with a few other minor details. Essentially
+only one frame may be evicted at any one time. 
 
+The benefit of this is that there can be no circular wait with only 
+one main lock, the process holding it cannot be made to wait for
+another process currently waiting on it.
 
 >> B6: A page fault in process P can cause another process Q's frame
 >> to be evicted.  How do you ensure that Q cannot access or modify
@@ -190,7 +195,7 @@ We attempted to solve this problem using pinning. A boolean in the frame struct
 indicates whether or not it can be evicted when freeing memory in the frame
 table. This would be set in h_read and h_write, when the buffer in user memory
 is accessed. However, the nature of our memory handling causes this to fail
-with one or two of the tests, and in the end we were forced to discard it.
+with some of the tests, and in the end we were forced to discard it.
 
 >> B8: Explain how you handle access to paged-out pages that occur
 >> during system calls.  Do you use page faults to bring in pages (as
@@ -198,7 +203,6 @@ with one or two of the tests, and in the end we were forced to discard it.
 >> into physical memory, or do you use some other design?  How do you
 >> gracefully handle attempted accesses to invalid virtual addresses?
 
-//TODO dont know if this is right
 Our pinning implementation would have meant that pages already in use by system
 calls are not paged out.
 However, it will currently page fault to load the appropriate memory, as user
