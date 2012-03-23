@@ -147,7 +147,6 @@ The benefit of this is that there can be no circular wait with only
 one main lock, the process holding it cannot be made to wait for
 another process currently waiting on it.
 
-
 >> B6: A page fault in process P can cause another process Q's frame
 >> to be evicted.  How do you ensure that Q cannot access or modify
 >> the page during the eviction process?  How do you avoid a race
@@ -178,7 +177,6 @@ with some of the tests, and in the end we were forced to discard it.
 >> into physical memory, or do you use some other design?  How do you
 >> gracefully handle attempted accesses to invalid virtual addresses?
 
-//TODO dont know if this is right
 Our pinning implementation would have meant that pages already in use by system
 calls are not paged out.
 However, it will currently page fault to load the appropriate memory, as user
